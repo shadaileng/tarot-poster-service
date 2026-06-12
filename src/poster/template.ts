@@ -1,0 +1,323 @@
+// 海报 HTML 模板生成
+// 用 CSS 打造暗黑神秘风格海报
+
+import type { PosterData } from './types'
+
+export function buildPosterHTML(data: PosterData): string {
+  const cardsHTML = data.cards.map((card) => {
+    const isReversed = card.orientation === 'reversed'
+    const keywordsStr = card.keywords.slice(0, 4).join(' · ')
+
+    return `
+    <div class="card-item">
+      <div class="card-position">${escapeHTML(card.position)}</div>
+      <div class="card-image-wrap ${isReversed ? 'reversed' : ''}">
+        <img class="card-image" src="${escapeHTML(card.image)}" alt="${escapeHTML(card.name)}" crossorigin="anonymous" />
+        <div class="card-badge ${card.orientation}">${isReversed ? '逆位' : '正位'}</div>
+      </div>
+      <div class="card-name">${escapeHTML(card.name)}</div>
+      <div class="card-keywords">${escapeHTML(keywordsStr)}</div>
+      <div class="card-meaning">${escapeHTML(card.meaning)}</div>
+    </div>`
+  }).join('')
+
+  const interpretationHTML = data.interpretation
+    ? `<div class="interpretation-section">
+         <div class="section-title">✨ 综合解读</div>
+         <div class="interpretation-text">${escapeHTML(data.interpretation)}</div>
+       </div>`
+    : ''
+
+  return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=750, initial-scale=1">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 750px;
+    font-family: 'Noto Serif SC', 'SimSun', serif;
+    background: linear-gradient(160deg, #0a0a1a 0%, #1a1a2e 40%, #16213e 100%);
+    color: #e0d8c8;
+    min-height: 1334px;
+  }
+
+  .poster-container {
+    padding: 60px 50px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* 背景装饰 */
+  .poster-container::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(ellipse at 20% 10%, rgba(212, 175, 55, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 30%, rgba(138, 43, 226, 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 80%, rgba(212, 175, 55, 0.05) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  /* 顶部星月装饰 */
+  .header-decor {
+    text-align: center;
+    margin-bottom: 36px;
+    position: relative;
+  }
+
+  .header-decor .moon {
+    font-size: 28px;
+    opacity: 0.3;
+    letter-spacing: 8px;
+  }
+
+  .header-decor .line {
+    width: 120px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.4), transparent);
+    margin: 16px auto;
+  }
+
+  /* 标题 */
+  .poster-title {
+    text-align: center;
+    font-size: 36px;
+    font-weight: 700;
+    color: #d4af37;
+    letter-spacing: 4px;
+    margin-bottom: 12px;
+    text-shadow: 0 0 30px rgba(212, 175, 55, 0.2);
+    position: relative;
+  }
+
+  .poster-subtitle {
+    text-align: center;
+    font-size: 16px;
+    color: rgba(224, 216, 200, 0.5);
+    margin-bottom: 40px;
+    position: relative;
+  }
+
+  /* 问题 */
+  .question-section {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(212, 175, 55, 0.15);
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-bottom: 40px;
+    text-align: center;
+    position: relative;
+  }
+
+  .question-label {
+    font-size: 14px;
+    color: rgba(212, 175, 55, 0.6);
+    margin-bottom: 8px;
+  }
+
+  .question-text {
+    font-size: 22px;
+    color: #e0d8c8;
+    font-weight: 600;
+  }
+
+  /* 牌阵区域 */
+  .cards-section {
+    margin-bottom: 40px;
+    position: relative;
+  }
+
+  .cards-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 28px;
+  }
+
+  /* 单张牌 */
+  .card-item {
+    width: 180px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .card-position {
+    font-size: 14px;
+    color: rgba(212, 175, 55, 0.8);
+    font-weight: 600;
+    padding: 3px 14px;
+    background: rgba(212, 175, 55, 0.1);
+    border-radius: 20px;
+  }
+
+  .card-image-wrap {
+    width: 160px;
+    height: 260px;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    border: 2px solid rgba(212, 175, 55, 0.2);
+  }
+
+  .card-image-wrap.reversed .card-image {
+    transform: rotate(180deg);
+  }
+
+  .card-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .card-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 12px;
+    padding: 2px 10px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+
+  .card-badge.upright {
+    background: rgba(10, 200, 120, 0.85);
+    color: #fff;
+  }
+
+  .card-badge.reversed {
+    background: rgba(220, 100, 80, 0.85);
+    color: #fff;
+  }
+
+  .card-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: #e0d8c8;
+    text-align: center;
+  }
+
+  .card-keywords {
+    font-size: 12px;
+    color: rgba(212, 175, 55, 0.7);
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  .card-meaning {
+    font-size: 13px;
+    color: rgba(224, 216, 200, 0.6);
+    text-align: center;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* 解读区域 */
+  .interpretation-section {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(212, 175, 55, 0.1);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 40px;
+    position: relative;
+  }
+
+  .section-title {
+    font-size: 22px;
+    color: #d4af37;
+    font-weight: 700;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .interpretation-text {
+    font-size: 15px;
+    color: rgba(224, 216, 200, 0.75);
+    line-height: 1.8;
+    white-space: pre-wrap;
+  }
+
+  /* 底部信息 */
+  .footer {
+    text-align: center;
+    padding-top: 24px;
+    border-top: 1px solid rgba(212, 175, 55, 0.1);
+    position: relative;
+  }
+
+  .footer-text {
+    font-size: 13px;
+    color: rgba(224, 216, 200, 0.35);
+    line-height: 2;
+  }
+
+  .footer-brand {
+    font-size: 15px;
+    color: rgba(212, 175, 55, 0.4);
+    font-weight: 600;
+    letter-spacing: 2px;
+  }
+
+  /* 海报就绪标记（Puppeteer 等待此选择器） */
+  .poster-ready {
+    opacity: 1;
+  }
+</style>
+</head>
+<body>
+  <div class="poster-container poster-ready">
+    <!-- 顶部装饰 -->
+    <div class="header-decor">
+      <div class="moon">☽ ★ ☾</div>
+      <div class="line"></div>
+    </div>
+
+    <!-- 标题 -->
+    <div class="poster-title">塔 罗 占 卜</div>
+    <div class="poster-subtitle">${escapeHTML(data.spreadName)} · ${escapeHTML(data.date)}</div>
+
+    <!-- 问题 -->
+    <div class="question-section">
+      <div class="question-label">🔮 你的问题</div>
+      <div class="question-text">${escapeHTML(data.question)}</div>
+    </div>
+
+    <!-- 牌阵 -->
+    <div class="cards-section">
+      <div class="cards-grid">
+        ${cardsHTML}
+      </div>
+    </div>
+
+    <!-- AI 解读 -->
+    ${interpretationHTML}
+
+    <!-- 底部 -->
+    <div class="footer">
+      <div class="footer-brand">✦ TAROT ✦</div>
+      <div class="footer-text">AI塔罗占卜 · 仅供娱乐参考</div>
+    </div>
+  </div>
+</body>
+</html>`
+}
+
+function escapeHTML(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}

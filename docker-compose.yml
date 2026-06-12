@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  poster:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tarot-poster
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - API_KEY=${API_KEY:-}
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+      - CACHE_MAX_SIZE=100
+      - CACHE_TTL_SECONDS=3600
+    volumes:
+      # 可选：挂载字体目录
+      - ./assets/fonts:/app/assets/fonts:ro
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '-', 'http://localhost:3000/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3

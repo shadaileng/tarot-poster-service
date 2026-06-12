@@ -1,0 +1,40 @@
+# HuggingFace Spaces 专用 Dockerfile
+# HF 使用 PORT=7860，需要 root 端点
+
+FROM node:20-slim
+
+# 安装 pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# 安装 Chromium + 中文字体
+RUN apt-get update && apt-get install -y \
+  chromium \
+  chromium-sandbox \
+  fonts-noto-cjk \
+  fonts-noto-cjk-extra \
+  --no-install-recommends \
+  && rm -rf /var/lib/apt/lists/*
+
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+
+WORKDIR /app
+
+COPY pnpm-lock.yaml package.json ./
+RUN pnpm install --frozen-lockfile
+
+COPY tsconfig.json ./
+COPY src/ ./src/
+RUN pnpm run build
+
+# HF Spaces 默认端口
+ENV PORT=7860
+ENV NODE_ENV=production
+
+EXPOSE 7860
+
+COPY scripts/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["node", "dist/index.js"]

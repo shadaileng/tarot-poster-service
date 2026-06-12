@@ -1,0 +1,26 @@
+{
+  "name": "tarot-poster-service",
+  "version": "1.0.0",
+  "description": "塔罗牌海报生成微服务 - HTML/CSS + Puppeteer 截图",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "puppeteer": "^23.6.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.14.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.4.2",
+    "vitest": "^2.1.0"
+  }
+}
