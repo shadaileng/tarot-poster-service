@@ -1,18 +1,35 @@
 // 海报 HTML 模板生成
 // 用 CSS 打造暗黑神秘风格海报
 
-import type { PosterData } from './types'
+import type { PosterData, PosterCardInput } from './types'
+import { config } from '../config'
+
+/** 从 card.image 中提取文件名，生成本地 SVG 服务 URL */
+function resolveCardImage(card: PosterCardInput): string {
+  const fileName = card.image.split('/').pop() || ''
+  return `http://localhost:${config.port}/cards/${fileName}`
+}
+
+/** 提取 "✨ 综合解读" 之后的内容，去掉前面逐张牌的个性化解读 */
+function extractComprehensivePart(interpretation: string): string {
+  const marker = '✨ 综合解读'
+  const idx = interpretation.lastIndexOf(marker)
+  if (idx === -1) return interpretation
+  const after = interpretation.substring(idx + marker.length).trim()
+  return after
+}
 
 export function buildPosterHTML(data: PosterData): string {
   const cardsHTML = data.cards.map((card) => {
     const isReversed = card.orientation === 'reversed'
     const keywordsStr = card.keywords.slice(0, 4).join(' · ')
+    const cardSrc = resolveCardImage(card)
 
     return `
     <div class="card-item">
       <div class="card-position">${escapeHTML(card.position)}</div>
       <div class="card-image-wrap ${isReversed ? 'reversed' : ''}">
-        <img class="card-image" src="${escapeHTML(card.image)}" alt="${escapeHTML(card.name)}" crossorigin="anonymous" />
+        <img class="card-image" src="${escapeHTML(cardSrc)}" alt="${escapeHTML(card.name)}" />
         <div class="card-badge ${card.orientation}">${isReversed ? '逆位' : '正位'}</div>
       </div>
       <div class="card-name">${escapeHTML(card.name)}</div>
@@ -24,7 +41,7 @@ export function buildPosterHTML(data: PosterData): string {
   const interpretationHTML = data.interpretation
     ? `<div class="interpretation-section">
          <div class="section-title">✨ 综合解读</div>
-         <div class="interpretation-text">${escapeHTML(data.interpretation)}</div>
+         <div class="interpretation-text">${escapeHTML(extractComprehensivePart(data.interpretation))}</div>
        </div>`
     : ''
 

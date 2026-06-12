@@ -1,6 +1,7 @@
 // Express 服务入口
 // 提供海报生成 API、健康检查、根路径（HF Spaces 兼容）
 
+import path from 'path'
 import express from 'express'
 import { config } from './config'
 import { corsMiddleware } from './middleware/cors'
@@ -13,6 +14,9 @@ import type { PosterData } from './poster/types'
 const app = express()
 app.use(express.json({ limit: '1mb' }))
 app.use(corsMiddleware)
+
+// 静态文件服务：本地卡牌 SVG 图片
+app.use('/cards', express.static(path.join(__dirname, '../assets/cards')))
 
 // ========== 根路径（HF Spaces 兼容） ==========
 app.get('/', (_req, res) => {

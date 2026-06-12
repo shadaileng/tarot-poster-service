@@ -9,7 +9,7 @@ const mockData: PosterData = {
   cards: [
     {
       name: '愚者',
-      image: 'https://example.com/fool.png',
+      image: '/static/cards/major-00.svg',
       position: '现状',
       orientation: 'upright',
       meaning: '新的开始，冒险精神',
@@ -19,7 +19,7 @@ const mockData: PosterData = {
     },
     {
       name: '女祭司',
-      image: 'https://example.com/priestess.png',
+      image: '/static/cards/major-02.svg',
       position: '未来',
       orientation: 'reversed',
       meaning: '直觉，内在智慧',
@@ -30,7 +30,7 @@ const mockData: PosterData = {
   ],
   question: '我的未来会怎样？',
   spreadName: '三牌阵',
-  interpretation: '这是一段关于成长与探索的旅程...',
+  interpretation: '逐张牌解读...\n\n✨ 综合解读\n这是一段关于成长与探索的旅程...',
   date: '2026-06-12',
 }
 
@@ -51,6 +51,29 @@ describe('poster template', () => {
     const html = buildPosterHTML(xssData)
     expect(html).not.toContain('<script>alert')
     expect(html).toContain('&lt;script&gt;alert')
+  })
+
+  it('should resolve card image to local SVG path', () => {
+    const html = buildPosterHTML(mockData)
+    expect(html).toContain('http://localhost:3000/cards/major-00.svg')
+    expect(html).toContain('http://localhost:3000/cards/major-02.svg')
+  })
+
+  it('should only show comprehensive interpretation after ✨ 综合解读', () => {
+    const html = buildPosterHTML(mockData)
+    // 应该包含综合解读的内容
+    expect(html).toContain('这是一段关于成长与探索的旅程')
+    // 不应该包含 "逐张牌解读" 的内容
+    expect(html).not.toContain('逐张牌解读')
+  })
+
+  it('should handle interpretation without comprehensive marker', () => {
+    const noMarker = {
+      ...mockData,
+      interpretation: '直接的综合解读文本',
+    }
+    const html = buildPosterHTML(noMarker)
+    expect(html).toContain('直接的综合解读文本')
   })
 })
 
