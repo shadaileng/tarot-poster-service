@@ -252,6 +252,72 @@ HF_TOKEN=hf_xxx HF_USERNAME=yourname HF_SPACE_NAME=tarot-poster make deploy-hf
 6. HF 收到推送后自动触发 Docker 构建和部署
 7. 推送完成后自动清理临时文件
 
+## 大文件处理策略
+
+### 当前项目状态
+
+当前推送文件总大小不到 500 KB（78 个 SVG + 源码 + 配置），完全不受 Git 限制影响，无需担心推送失败。
+
+### Git 平台限制参考
+
+| 平台 | 单文件限制 | 仓库总大小建议 |
+|------|-----------|---------------|
+| GitHub | 100 MB（超过会警告） | ≤ 1 GB |
+| HuggingFace Spaces | 无严格限制 | 免费版总存储 10 GB |
+| GitLab | 100 MB | ≤ 10 GB |
+
+### 未来如引入大文件，推荐方案
+
+如果后续需要加入中文字体（`.ttf` 通常 5-20 MB）、高清背景图等大文件，有三种处理方式：
+
+#### 方案 A：Docker 构建时下载（推荐）
+
+大文件不入 Git，在 `Dockerfile.hf` 中通过 `RUN wget` 或 `RUN curl` 下载。文件只进 Docker 镜像，Git 仓库保持轻量。
+
+```dockerfile
+# 示例：构建时下载中文字体
+RUN mkdir -p /app/assets/fonts && \
+    wget -O /app/assets/fonts/NotoSansSC.ttf \
+    https://github.com/xxx/releases/download/v1.0/NotoSansSC.ttf
+```
+
+- ✅ 不影响 Git 推送，不受单文件大小限制
+- ✅ HF Space 构建时会缓存该层（只要 URL 不变）
+- ⚠️ 依赖外部下载源，若源不可用则构建失败
+
+#### 方案 B：Git LFS（Large File Storage）
+
+在 HF Space 上可用，适合 >50 MB 的单文件。
+
+```bash
+# 安装并配置 Git LFS
+git lfs install
+git lfs track "*.ttf" "*.png"
+git add .gitattributes
+```
+
+- ✅ 对 Git 工作流透明
+- ⚠️ HF Space 免费版 LFS 带宽有限
+- ⚠️ 需要额外配置 `.gitattributes`
+
+#### 方案 C：CDN / 对象存储
+
+运行时从外部 URL 动态加载，既不进 Git 也不进镜像。
+
+- ✅ 镜像最小，部署最快
+- ⚠️ 增加运行时网络依赖
+- ⚠️ 需要额外的存储服务
+
+### 常见大文件来源及处理建议
+
+| 文件类型 | 典型大小 | 推荐方案 |
+|---------|---------|---------|
+| 中文字体 `.ttf` / `.otf` | 5-20 MB | 方案 A（Docker 构建时下载） |
+| 高清背景图 `.png` / `.jpg` | 2-10 MB | 方案 A 或 C |
+| 多套字体（Light/Bold/Regular） | 合计 20-60 MB | 方案 A |
+| 卡牌高清图（78 张 PNG） | 合计可能 50-200 MB | 方案 C（CDN） |
+| `node_modules` | 几百 MB | 已在 `.gitignore` 中排除 |
+
 ## 注意事项
 
 1. **首次部署**：需要先在 HF 上手动创建 Space，否则推送会失败
