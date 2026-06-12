@@ -1,0 +1,41 @@
+# 文档（不打包进镜像）
+*.md
+docs/
+README.md
+
+# 依赖
+node_modules/
+
+# 构建产物
+dist/
+
+# Git
+.git/
+.gitignore
+.dockerignore
+
+# 编辑器
+.vscode/
+.idea/
+
+# 环境变量
+.env
+.env.local
+!.env.example
+
+# 日志
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 测试
+test/
+coverage/
+
+# Docker 编排文件（不打包进镜像）
+docker-compose.yml
+Makefile
+Dockerfile
+Dockerfile.hf
