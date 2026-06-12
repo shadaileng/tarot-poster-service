@@ -2,6 +2,7 @@
 // 提供海报生成 API、健康检查、根路径（HF Spaces 兼容）
 
 import path from 'path'
+import { fileURLToPath } from 'url'
 import express from 'express'
 import { config } from './config'
 import { corsMiddleware } from './middleware/cors'
@@ -10,6 +11,9 @@ import { buildPosterHTML } from './poster/template'
 import { renderPoster } from './poster/render'
 import { posterCache } from './cache'
 import type { PosterData } from './poster/types'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 const app = express()
 app.use(express.json({ limit: '1mb' }))
