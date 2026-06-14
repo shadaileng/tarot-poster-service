@@ -39,7 +39,7 @@ export function buildPosterHTML(data: PosterData): string {
   }).join('')
 
   // 优先使用 comprehensiveInterpretation，fallback 到 extractComprehensivePart
-  const comprehensiveText = data.comprehensiveInterpretation || extractComprehensivePart(data.interpretation) || ''
+  const comprehensiveText = data.comprehensiveInterpretation || extractComprehensivePart(data.interpretation || '') || ''
 
   const interpretationHTML = comprehensiveText
     ? `<div class="interpretation-section">

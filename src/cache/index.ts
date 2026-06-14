@@ -3,6 +3,7 @@
 
 import { createHash } from 'node:crypto'
 import { config } from '../config'
+import type { PosterData } from '../poster/types'
 
 interface CacheEntry {
   key: string
@@ -26,10 +27,10 @@ export class LRUCache {
   }
 
   /** 根据 PosterData 生成缓存键 */
-  generateKey(data: Record<string, unknown>): string {
+  generateKey(data: PosterData): string {
     const normalized = JSON.stringify({
-      cards: (data.cards as Array<Record<string, unknown>>)?.map((c: Record<string, unknown>) => ({
-        name: c.name || (c as { card?: { name: string } }).card?.name,
+      cards: data.cards.map((c) => ({
+        name: c.name,
         orientation: c.orientation,
         position: c.position,
       })),

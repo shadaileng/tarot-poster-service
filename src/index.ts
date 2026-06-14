@@ -16,7 +16,7 @@ import type { PosterData } from './poster/types'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const app = express()
+const app: express.Express = express()
 app.use(express.json({ limit: '1mb' }))
 app.use(corsMiddleware)
 
