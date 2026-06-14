@@ -36,6 +36,7 @@ export class LRUCache {
       question: data.question,
       spreadName: data.spreadName,
       date: data.date,
+      comprehensiveInterpretation: data.comprehensiveInterpretation || '',
     })
     return createHash('sha256').update(normalized).digest('hex').slice(0, 16)
   }
