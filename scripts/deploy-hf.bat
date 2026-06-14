@@ -75,6 +75,14 @@ if not errorlevel 1 (
     echo [WARN]   ✗ Dockerfile.hf ^(不存在，跳过^)
 )
 
+REM 复制 README.hf.md → 临时目录/README.md（HF Space 配置）
+copy /Y "%PROJECT_DIR%\README.hf.md" "%TMP_DIR%\README.md" >nul 2>&1
+if not errorlevel 1 (
+    echo [INFO]   ^✓ README.md ^(from README.hf.md^)
+) else (
+    echo [WARN]   ✗ README.hf.md ^(不存在，跳过^)
+)
+
 xcopy /E /I /Y "%PROJECT_DIR%\src" "%TMP_DIR%\src" >nul 2>&1
 if not errorlevel 1 (
     echo [INFO]   ^✓ src

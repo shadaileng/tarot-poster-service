@@ -156,6 +156,16 @@ try {
         Write-Log "  ✗ Dockerfile.hf (不存在，跳过)" "WARN"
     }
 
+    # 复制 README.hf.md → 临时目录/README.md（HF Space 配置）
+    if (Test-Path "$projectDir\README.hf.md") {
+        if (-not $WhatIf) {
+            Copy-Item -Path "$projectDir\README.hf.md" -Destination "$tmpDir\README.md" -Force
+        }
+        Write-Log "  ✓ README.md (from README.hf.md)"
+    } else {
+        Write-Log "  ✗ README.hf.md (不存在，跳过)" "WARN"
+    }
+
     # 处理 .dockerignore
     $dockerignoreGenerated = $false
     if (Test-Path "$projectDir\.dockerignore") {

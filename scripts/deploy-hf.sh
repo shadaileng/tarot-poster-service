@@ -95,6 +95,14 @@ else
   log_warn "  ✗ Dockerfile.hf (不存在，跳过)"
 fi
 
+# 复制 README.hf.md → 临时目录/README.md（HF Space 配置）
+if [ -f "$PROJECT_DIR/README.hf.md" ]; then
+  cp "$PROJECT_DIR/README.hf.md" "$TMP_DIR/README.md"
+  log_info "  ✓ README.md (from README.hf.md)"
+else
+  log_warn "  ✗ README.hf.md (不存在，跳过)"
+fi
+
 # 待推送文件列表
 FILES_TO_COPY=(
   "src"
