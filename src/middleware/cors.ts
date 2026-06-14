@@ -1,7 +1,7 @@
 // CORS 中间件
 
 import type { Request, Response, NextFunction } from 'express'
-import { config } from '../config'
+import { config } from '../config.js'
 
 export function corsMiddleware(_req: Request, res: Response, next: NextFunction): void {
   res.setHeader('Access-Control-Allow-Origin', config.corsOrigin)

@@ -2,8 +2,8 @@
 // 基于 SHA256 哈希生成缓存键，支持可配置的最大容量和 TTL
 
 import { createHash } from 'node:crypto'
-import { config } from '../config'
-import type { PosterData } from '../poster/types'
+import { config } from '../config.js'
+import type { PosterData } from '../poster/types.js'
 
 interface CacheEntry {
   key: string

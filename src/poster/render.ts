@@ -2,7 +2,7 @@
 // 复用浏览器实例，避免每次请求都 launch + close
 
 import puppeteer, { type Browser } from 'puppeteer'
-import { config } from '../config'
+import { config } from '../config.js'
 
 // ========== 浏览器连接池 ==========
 let browserPromise: Promise<Browser> | null = null

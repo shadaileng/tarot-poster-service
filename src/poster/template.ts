@@ -1,8 +1,8 @@
 // 海报 HTML 模板生成
 // 用 CSS 打造暗黑神秘风格海报
 
-import type { PosterData, PosterCardInput } from './types'
-import { config } from '../config'
+import type { PosterData, PosterCardInput } from './types.js'
+import { config } from '../config.js'
 
 /** 从 card.image 中提取文件名，生成本地 SVG 服务 URL */
 function resolveCardImage(card: PosterCardInput): string {
