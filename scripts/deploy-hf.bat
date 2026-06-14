@@ -62,19 +62,18 @@ echo [INFO] 项目目录: %PROJECT_DIR%
 echo [INFO] 临时目录: %TMP_DIR%
 echo.
 
-REM ========== 1. 准备 Dockerfile ==========
-echo [INFO] 复制 Dockerfile.hf → Dockerfile
-copy /Y "%PROJECT_DIR%\Dockerfile.hf" "%PROJECT_DIR%\Dockerfile" >nul
-if errorlevel 1 (
-    echo [ERROR] 复制 Dockerfile.hf 失败
-    pause
-    exit /b 1
-)
-
-REM ========== 2. 创建临时目录并复制文件 ==========
+REM ========== 1. 创建临时目录并复制文件 ==========
 mkdir "%TMP_DIR%" 2>nul
 
 echo [INFO] 复制项目文件到临时目录...
+
+REM 复制 Dockerfile.hf → 临时目录/Dockerfile（不覆盖项目目录的 Dockerfile）
+copy /Y "%PROJECT_DIR%\Dockerfile.hf" "%TMP_DIR%\Dockerfile" >nul 2>&1
+if not errorlevel 1 (
+    echo [INFO]   ^✓ Dockerfile ^(from Dockerfile.hf^)
+) else (
+    echo [WARN]   ✗ Dockerfile.hf ^(不存在，跳过^)
+)
 
 xcopy /E /I /Y "%PROJECT_DIR%\src" "%TMP_DIR%\src" >nul 2>&1
 if not errorlevel 1 (
@@ -105,9 +104,6 @@ if not errorlevel 1 echo [INFO]   ^✓ pnpm-lock.yaml
 
 copy /Y "%PROJECT_DIR%\tsconfig.json" "%TMP_DIR%\" >nul 2>&1
 if not errorlevel 1 echo [INFO]   ^✓ tsconfig.json
-
-copy /Y "%PROJECT_DIR%\Dockerfile" "%TMP_DIR%\" >nul 2>&1
-if not errorlevel 1 echo [INFO]   ^✓ Dockerfile
 
 if exist "%PROJECT_DIR%\.dockerignore" (
     copy /Y "%PROJECT_DIR%\.dockerignore" "%TMP_DIR%\" >nul 2>&1

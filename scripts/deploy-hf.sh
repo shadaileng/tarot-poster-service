@@ -84,11 +84,18 @@ log_info "Space: $HF_SPACE_NAME"
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-# ---------- 1. 准备 Dockerfile ----------
-log_info "复制 Dockerfile.hf → Dockerfile"
-cp "$PROJECT_DIR/Dockerfile.hf" "$PROJECT_DIR/Dockerfile"
+# ---------- 1. 复制文件到临时目录 ----------
+log_info "复制项目文件到临时目录..."
 
-# ---------- 待推送文件列表 ----------
+# 复制 Dockerfile.hf → 临时目录/Dockerfile（不覆盖项目目录的 Dockerfile）
+if [ -f "$PROJECT_DIR/Dockerfile.hf" ]; then
+  cp "$PROJECT_DIR/Dockerfile.hf" "$TMP_DIR/Dockerfile"
+  log_info "  ✓ Dockerfile (from Dockerfile.hf)"
+else
+  log_warn "  ✗ Dockerfile.hf (不存在，跳过)"
+fi
+
+# 待推送文件列表
 FILES_TO_COPY=(
   "src"
   "assets"
@@ -96,7 +103,6 @@ FILES_TO_COPY=(
   "package.json"
   "pnpm-lock.yaml"
   "tsconfig.json"
-  "Dockerfile"
 )
 
 # 处理 .dockerignore
@@ -118,9 +124,6 @@ test/
 EOF
   FILES_TO_COPY+=(".dockerignore")
 fi
-
-# ---------- 2. 复制文件到临时目录 ----------
-log_info "复制项目文件到临时目录..."
 
 for item in "${FILES_TO_COPY[@]}"; do
   if [ "$item" = ".dockerignore" ] && [ ! -f "$PROJECT_DIR/.dockerignore" ]; then

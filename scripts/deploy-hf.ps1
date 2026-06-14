@@ -136,22 +136,25 @@ try {
     }
     Write-Log "临时目录: $tmpDir"
 
-    # 6. 复制 Dockerfile.hf → Dockerfile
-    Write-Log "复制 Dockerfile.hf → Dockerfile"
-    if (-not $WhatIf) {
-        Copy-Item -Path "$projectDir\Dockerfile.hf" -Destination "$projectDir\Dockerfile" -Force
-    }
-
-    # 7. 复制文件到临时目录
+    # 6. 复制文件到临时目录
     $filesToCopy = @(
         "src",
         "assets",
         "scripts",
         "package.json",
         "pnpm-lock.yaml",
-        "tsconfig.json",
-        "Dockerfile"
+        "tsconfig.json"
     )
+
+    # 复制 Dockerfile.hf → 临时目录/Dockerfile（不覆盖项目目录的 Dockerfile）
+    if (Test-Path "$projectDir\Dockerfile.hf") {
+        if (-not $WhatIf) {
+            Copy-Item -Path "$projectDir\Dockerfile.hf" -Destination "$tmpDir\Dockerfile" -Force
+        }
+        Write-Log "  ✓ Dockerfile (from Dockerfile.hf)"
+    } else {
+        Write-Log "  ✗ Dockerfile.hf (不存在，跳过)" "WARN"
+    }
 
     # 处理 .dockerignore
     $dockerignoreGenerated = $false
