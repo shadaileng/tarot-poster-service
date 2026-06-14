@@ -140,7 +140,7 @@ try {
     $filesToCopy = @(
         "src",
         "assets",
-        "scripts",
+        "scripts/entrypoint.sh",
         "package.json",
         "pnpm-lock.yaml",
         "tsconfig.json"
@@ -191,7 +191,12 @@ test/
         $src = Join-Path $projectDir $item
         if (Test-Path $src) {
             if (-not $WhatIf) {
-                Copy-Item -Path $src -Destination $tmpDir -Recurse -Force
+                # 保持目录结构
+                $destDir = Join-Path $tmpDir (Split-Path -Parent $item)
+                if (-not (Test-Path $destDir)) {
+                    New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+                }
+                Copy-Item -Path $src -Destination $destDir -Recurse -Force
             }
             Write-Log "  ✓ $item"
         } else {

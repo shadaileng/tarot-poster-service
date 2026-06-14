@@ -89,11 +89,13 @@ if not errorlevel 1 (
     echo [WARN]   ✗ assets ^(不存在，跳过^)
 )
 
-xcopy /E /I /Y "%PROJECT_DIR%\scripts" "%TMP_DIR%\scripts" >nul 2>&1
+REM 只复制 entrypoint.sh，不复制部署脚本
+mkdir "%TMP_DIR%\scripts" 2>nul
+copy /Y "%PROJECT_DIR%\scripts\entrypoint.sh" "%TMP_DIR%\scripts\" >nul 2>&1
 if not errorlevel 1 (
-    echo [INFO]   ^✓ scripts
+    echo [INFO]   ^✓ scripts\entrypoint.sh
 ) else (
-    echo [WARN]   ✗ scripts ^(不存在，跳过^)
+    echo [WARN]   ✗ scripts\entrypoint.sh ^(不存在，跳过^)
 )
 
 copy /Y "%PROJECT_DIR%\package.json" "%TMP_DIR%\" >nul 2>&1

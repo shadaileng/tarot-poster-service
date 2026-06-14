@@ -99,7 +99,7 @@ fi
 FILES_TO_COPY=(
   "src"
   "assets"
-  "scripts"
+  "scripts/entrypoint.sh"
   "package.json"
   "pnpm-lock.yaml"
   "tsconfig.json"
@@ -133,7 +133,10 @@ for item in "${FILES_TO_COPY[@]}"; do
   fi
 
   if [ -e "$src" ]; then
-    cp -a "$src" "$TMP_DIR/"
+    # 保持目录结构
+    dest_dir="$TMP_DIR/$(dirname "$item")"
+    mkdir -p "$dest_dir"
+    cp -a "$src" "$dest_dir/"
     log_info "  ✓ $item"
   else
     log_warn "  ✗ $item (不存在，跳过)"
