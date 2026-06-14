@@ -1,6 +1,7 @@
 // Express 服务入口
 // 提供海报生成 API、健康检查、根路径（HF Spaces 兼容）
 
+import 'dotenv/config'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import express from 'express'
