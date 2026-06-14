@@ -127,6 +127,17 @@ if exist "%PROJECT_DIR%\.dockerignore" (
 
 echo.
 
+REM ========== 验证临时目录 ==========
+set "FILE_COUNT=0"
+for %%f in ("%TMP_DIR%\*") do set /a FILE_COUNT+=1
+if %FILE_COUNT%==0 (
+    echo [ERROR] 临时目录为空，没有任何文件被复制
+    pause
+    exit /b 1
+)
+echo [INFO] 共复制 %FILE_COUNT% 个文件到临时目录
+echo.
+
 REM ========== 3. 初始化 Git 并推送 ==========
 cd /d "%TMP_DIR%"
 
@@ -136,7 +147,18 @@ git config user.email "%HF_USERNAME%@users.huggingface.co"
 git remote add origin "https://%HF_USERNAME%:%HF_TOKEN%@huggingface.co/spaces/%HF_USERNAME%/%HF_SPACE_NAME%" 2>nul
 
 git add -A
-git commit -m "deploy: %date:~0,4%-%date:~5,2%-%date:~8,2%T%time:~0,2%:%time:~3,2%:%time:~6,2%Z" --quiet 2>nul
+git commit -m "deploy: %date:~0,4%-%date:~5,2%-%date:~8,2%T%time:~0,2%:%time:~3,2%:%time:~6,2%Z" 2>&1
+if errorlevel 1 (
+    echo.
+    echo [ERROR] git commit 失败
+    echo [ERROR] 当前目录: %CD%
+    echo [ERROR] 目录内容:
+    dir /a
+    echo [ERROR] git status:
+    git status
+    pause
+    exit /b 1
+)
 
 echo [INFO] 推送至: https://huggingface.co/spaces/%HF_USERNAME%/%HF_SPACE_NAME%
 echo [INFO] 正在推送...
