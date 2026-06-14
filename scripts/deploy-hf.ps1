@@ -224,6 +224,7 @@ test/
         git config user.email "${hfUsername}@users.huggingface.co"
         git remote add origin "$spaceRemote"
 
+        git checkout -b main
         git add -A
         $commitMessage = "deploy: $(Get-Date -Format 'yyyy-MM-ddTHH:mm:ssZ')"
         $commitResult = git commit -m $commitMessage --quiet 2>&1

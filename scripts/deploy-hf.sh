@@ -166,6 +166,7 @@ git config user.name  "$HF_USERNAME"
 git config user.email "${HF_USERNAME}@users.huggingface.co"
 git remote add origin "$SPACE_REMOTE"
 
+git checkout -b main
 git add -A
 if ! git commit -m "deploy: $(date -u +'%Y-%m-%dT%H:%M:%SZ')" --quiet 2>&1; then
   log_error "git commit 失败"

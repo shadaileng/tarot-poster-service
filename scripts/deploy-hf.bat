@@ -148,6 +148,7 @@ git config user.name "%HF_USERNAME%"
 git config user.email "%HF_USERNAME%@users.huggingface.co"
 git remote add origin "https://%HF_USERNAME%:%HF_TOKEN%@huggingface.co/spaces/%HF_USERNAME%/%HF_SPACE_NAME%" 2>nul
 
+git checkout -b main
 git add -A
 git commit -m "deploy: %date:~0,4%-%date:~5,2%-%date:~8,2%T%time:~0,2%:%time:~3,2%:%time:~6,2%Z" 2>&1
 if errorlevel 1 (
