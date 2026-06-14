@@ -140,6 +140,19 @@ for item in "${FILES_TO_COPY[@]}"; do
   fi
 done
 
+# ---------- 验证临时目录 ----------
+file_count=$(find "$TMP_DIR" -maxdepth 1 -type f | wc -l)
+dir_count=$(find "$TMP_DIR" -maxdepth 1 -type d | tail -n +2 | wc -l)
+total=$((file_count + dir_count))
+
+if [ "$total" -eq 0 ]; then
+  log_error "临时目录为空，没有任何文件被复制"
+  log_error "目录: $TMP_DIR"
+  fail "文件复制失败，请检查项目目录结构"
+fi
+
+log_info "共复制 $total 个文件/目录到临时目录"
+
 # ---------- 3. 初始化 Git 并推送 ----------
 SPACE_REMOTE="https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_USERNAME}/${HF_SPACE_NAME}"
 
@@ -151,9 +164,15 @@ git config user.email "${HF_USERNAME}@users.huggingface.co"
 git remote add origin "$SPACE_REMOTE"
 
 git add -A
-git commit -m "deploy: $(date -u +'%Y-%m-%dT%H:%M:%SZ')" --quiet || {
-  log_warn "没有检测到文件变更，尝试强制推送..."
-}
+if ! git commit -m "deploy: $(date -u +'%Y-%m-%dT%H:%M:%SZ')" --quiet 2>&1; then
+  log_error "git commit 失败"
+  log_error "当前目录: $(pwd)"
+  log_error "目录内容:"
+  ls -la
+  log_error "git status:"
+  git status
+  fail "无法创建提交，请检查文件是否正确复制"
+fi
 
 log_info "推送至: https://huggingface.co/spaces/${HF_USERNAME}/${HF_SPACE_NAME}"
 log_info "正在推送..."

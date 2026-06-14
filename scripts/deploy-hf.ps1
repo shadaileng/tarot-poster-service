@@ -199,6 +199,15 @@ test/
         }
     }
 
+    # 验证临时目录
+    if (-not $WhatIf) {
+        $items = Get-ChildItem -Path $tmpDir -Force
+        if ($items.Count -eq 0) {
+            throw "临时目录为空，没有任何文件被复制"
+        }
+        Write-Log "共复制 $($items.Count) 个文件/目录到临时目录"
+    }
+
     # 8. 初始化 Git 并推送
     $spaceRemote = "https://${hfUsername}:${hfToken}@huggingface.co/spaces/${hfUsername}/${hfSpaceName}"
 
@@ -212,7 +221,16 @@ test/
 
         git add -A
         $commitMessage = "deploy: $(Get-Date -Format 'yyyy-MM-ddTHH:mm:ssZ')"
-        git commit -m $commitMessage --quiet 2>&1 | Out-Null
+        $commitResult = git commit -m $commitMessage --quiet 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Log "git commit 失败" "ERROR"
+            Write-Log "当前目录: $(Get-Location)" "ERROR"
+            Write-Log "目录内容:" "ERROR"
+            Get-ChildItem -Path $tmpDir -Force | Format-Table Name, Length, LastWriteTime
+            Write-Log "git status:" "ERROR"
+            git status
+            throw "无法创建提交，请检查文件是否正确复制"
+        }
 
         Write-Log "推送至: https://huggingface.co/spaces/$hfUsername/$hfSpaceName"
         Write-Log "正在推送..."
