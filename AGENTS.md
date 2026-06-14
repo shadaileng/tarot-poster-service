@@ -24,7 +24,10 @@ tarot-poster-service/
 │       └── auth.ts           # API Key 鉴权中间件（未配置则跳过）
 ├── assets/fonts/             # 中文字体文件
 ├── scripts/
-│   └── entrypoint.sh         # 容器启动脚本
+│   ├── entrypoint.sh         # 容器启动脚本
+│   ├── deploy-hf.sh          # HF 部署脚本（Linux/macOS）
+│   ├── deploy-hf.ps1         # HF 部署脚本（Windows PowerShell）
+│   └── deploy-hf.bat         # HF 部署脚本（Windows 批处理）
 ├── test/
 │   └── poster.test.ts        # 海报生成测试
 ├── Dockerfile                # 标准多阶段构建
@@ -85,6 +88,14 @@ POST /poster  { cards, question, spreadName, interpretation, date }
 | `POSTER_WIDTH` | 海报宽度（px） | `750` |
 | `POSTER_HEIGHT` | 海报高度（px） | `1334` |
 
+## 部署配置（.env.hf）
+
+| 变量 | 用途 | 示例 |
+|------|------|------|
+| `HF_TOKEN` | HuggingFace Access Token | `hf_xxxxxxxxx` |
+| `HF_USERNAME` | HF 用户名或组织名 | `myuser` |
+| `HF_SPACE_NAME` | Space 名称 | `tarot-poster` |
+
 ## 部署方式
 
 | 方式 | 命令 | 说明 |
@@ -92,7 +103,7 @@ POST /poster  { cards, question, spreadName, interpretation, date }
 | 本地开发 | `pnpm install && pnpm run dev` | `http://localhost:3000` |
 | Docker | `docker build -t tarot-poster . && docker run -p 3000:3000 tarot-poster` | 多阶段构建 |
 | Docker Compose | `docker-compose up -d` | 一键编排 |
-| HF Spaces | 推送 `Dockerfile.hf`（重命名为 `Dockerfile`）到 HF Space | 免费 |
+| HF Spaces | `bash scripts/deploy-hf.sh` 或 `.\scripts\deploy-hf.ps1` | 自动化部署 |
 
 ## 编码规范
 

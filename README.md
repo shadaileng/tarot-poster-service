@@ -68,9 +68,23 @@ docker-compose up -d
 
 ### HuggingFace Spaces
 
-1. 创建 Space，选择 Docker 模板
-2. 将 `Dockerfile.hf` 重命名为 `Dockerfile` 推送到 Space 仓库
-3. HF 自动构建部署
+详见 [HuggingFace Spaces 部署文档](docs/hf-space-deploy.md)
+
+**快速开始**：
+
+```bash
+# Linux/macOS
+cp .env.hf.example .env.hf  # 编辑填入配置
+bash scripts/deploy-hf.sh
+
+# Windows (PowerShell)
+Copy-Item .env.hf.example .env.hf
+notepad .env.hf
+.\scripts\deploy-hf.ps1
+
+# Windows (批处理)
+# 编辑 scripts\deploy-hf.bat 修改变量后双击运行
+```
 
 ## 技术栈
 
