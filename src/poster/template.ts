@@ -38,10 +38,13 @@ export function buildPosterHTML(data: PosterData): string {
     </div>`
   }).join('')
 
-  const interpretationHTML = data.interpretation
+  // 优先使用 comprehensiveInterpretation，fallback 到 extractComprehensivePart
+  const comprehensiveText = data.comprehensiveInterpretation || extractComprehensivePart(data.interpretation) || ''
+
+  const interpretationHTML = comprehensiveText
     ? `<div class="interpretation-section">
          <div class="section-title">✨ 综合解读</div>
-         <div class="interpretation-text">${escapeHTML(extractComprehensivePart(data.interpretation))}</div>
+         <div class="interpretation-text">${escapeHTML(comprehensiveText)}</div>
        </div>`
     : ''
 
