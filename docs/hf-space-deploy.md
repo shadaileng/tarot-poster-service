@@ -16,8 +16,8 @@ flowchart TD
     B -->|均未配置| E["❌ 报错退出"]
     D -->|校验失败| E
     D -->|校验通过| F["构建 HF Space Git URL<br/>https://{user}:{token}@huggingface.co/spaces/{user}/{space}"]
-    F --> G["复制 Dockerfile.hf → Dockerfile"]
-    G --> H["创建临时目录 / 初始化 git"]
+    F --> G["复制 Dockerfile.hf → Dockerfile<br/>复制 README.hf.md → README.md"]
+    G --> H["创建临时目录 / 初始化 git<br/>git checkout -b main"]
     H --> I["复制项目文件到临时目录"]
     I --> J["git add + commit"]
     J --> K["git push --force 到 HF Space"]
@@ -49,17 +49,19 @@ cp .env.hf.example .env.hf
 
 - `src/` — TypeScript 源代码
 - `assets/` — 静态资源（SVG 素材）
-- `scripts/` — 入口脚本（entrypoint.sh）
+- `scripts/entrypoint.sh` — 容器入口脚本（不含部署脚本）
 - `package.json` — 依赖声明
 - `pnpm-lock.yaml` — 依赖锁定
 - `tsconfig.json` — TypeScript 配置
 - `Dockerfile` — 由 `Dockerfile.hf` 复制生成
+- `README.md` — 由 `README.hf.md` 复制生成（HF Space 配置）
 - `.dockerignore` — Docker 构建忽略规则
 
 以下文件不会被推送：
 - `node_modules/` — HF 构建时会重新安装
 - `dist/` — HF 构建时会重新编译
-- `.env` / `.env.local` — 敏感信息
+- `.env` / `.env.local` / `.env.hf` — 敏感信息
+- `scripts/deploy-hf.*` — 部署脚本（仅本地使用）
 - `docker-compose.yml` / `Makefile` — 本地开发工具
 - `test/` / `coverage/` — 测试文件
 - `.git/` — 避免嵌套 Git 仓库
@@ -130,10 +132,10 @@ notepad .env.hf  # 填入实际值
 
 1. 脚本从环境变量或 `.env.hf` 文件读取配置
 2. 校验 `HF_TOKEN`、`HF_USERNAME`、`HF_SPACE_NAME` 是否已设置且非占位符
-3. 将 `Dockerfile.hf` 复制为根目录 `Dockerfile`
-4. 将必要的源文件复制到临时目录
-5. 在临时目录初始化 Git，用 `HF_TOKEN` 作为密码认证
-6. 强制推送到 `https://huggingface.co/spaces/{username}/{space-name}`
+3. 将 `Dockerfile.hf` 复制为 `Dockerfile`，`README.hf.md` 复制为 `README.md`
+4. 将必要的源文件复制到临时目录（只复制 `scripts/entrypoint.sh`，不复制部署脚本）
+5. 在临时目录初始化 Git，显式创建 `main` 分支（`git checkout -b main`）
+6. 用 `HF_TOKEN` 作为密码认证，强制推送到 HF Space
 7. HF 收到推送后自动触发 Docker 构建和部署
 8. 推送完成后自动清理临时文件
 
