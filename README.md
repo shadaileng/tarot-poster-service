@@ -93,3 +93,33 @@ notepad .env.hf
 - **截图**: Puppeteer（无头 Chromium）
 - **缓存**: LRU 内存缓存
 - **部署**: Docker / HuggingFace Spaces
+
+## 疑难排解
+
+### CORS 跨域问题（HF Space + Cloudflare 反向代理）
+
+**问题现象**：前端请求 Cloudflare Worker 代理的 API 时，浏览器报 CORS 错误。响应头 `Access-Control-Allow-Origin` 返回的是 HF Space 域名（如 `https://<user>-<space>.hf.space`），而非前端域名或 `*`。
+
+**根因**：部署架构为 `前端 → Cloudflare Worker → HF Space → Express`。即使 Express 应用层设置了 `Access-Control-Allow-Origin: *`，HF Space 平台的 nginx 反向代理层会自动注入 CORS 响应头覆盖应用层设置，且值固定为 HF Space 自身的域名。
+
+**解决方案**：在 Cloudflare Worker 中拦截并覆盖 HF Space 返回的 CORS 响应头：
+
+```javascript
+// Cloudflare Worker 中处理响应
+const response = await fetch(targetUrl, { /* ... */ });
+
+// 覆盖 HF Space 平台注入的 CORS 头
+const corsHeaders = new Headers(response.headers);
+corsHeaders.set("Access-Control-Allow-Origin", "*");
+corsHeaders.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+corsHeaders.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+corsHeaders.set("Access-Control-Max-Age", "86400");
+
+return new Response(response.body, {
+  status: response.status,
+  statusText: response.statusText,
+  headers: corsHeaders,
+});
+```
+
+关键点：不能原样透传 HF Space 的响应头，必须在 Worker 层重新设置 CORS 头为 `*` 或具体的前端域名。
