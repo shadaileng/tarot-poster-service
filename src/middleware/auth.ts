@@ -2,7 +2,7 @@
 // 未配置 API Key 时自动跳过
 
 import type { Request, Response, NextFunction } from 'express'
-import { config } from '../config'
+import { config } from '../config.js'
 
 export function authMiddleware(req: Request, res: Response, next: NextFunction): void {
   // 未配置 API Key 时跳过鉴权

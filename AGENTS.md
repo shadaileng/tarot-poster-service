@@ -130,6 +130,8 @@ POST /poster  { cards, question, spreadName, interpretation, date }
 
 - TypeScript strict 模式
 - 所有环境变量通过 `src/config.ts` 统一访问，不直接读取 `process.env`
+- **ESM 导入必须带 `.js` 扩展名**（如 `import { config } from './config.js'`），符合 Node.js ESM 规范
+- 部署前确保 `pnpm run build`（tsc）通过，不能只依赖 `pnpm run dev`（tsx 不做类型检查）
 - 缓存键基于 SHA256 哈希（只对关键字段哈希，不包含 `meaning` 全文）
 - Puppeteer 浏览器实例通过连接池复用（`getBrowser()` 单例），监听 `SIGTERM/SIGINT` 优雅关闭
 - HTML 模板内联 CSS，不依赖外部样式文件
