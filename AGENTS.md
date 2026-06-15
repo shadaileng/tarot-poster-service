@@ -75,26 +75,47 @@ POST /poster  { cards, question, spreadName, interpretation, date }
 
 ## 环境变量
 
-| 变量 | 用途 | 默认值 |
-|------|------|--------|
-| `PORT` | 服务端口 | `3000`（HF Spaces: `7860`） |
-| `NODE_ENV` | 运行环境 | `development` |
-| `API_KEY` | API 鉴权密钥 | 空（不鉴权） |
-| `CORS_ORIGIN` | CORS 允许来源 | `*` |
-| `PUPPETEER_EXECUTABLE_PATH` | Chromium 路径 | 系统自动查找 |
-| `PUPPETEER_ARGS` | Chromium 启动参数 | `--no-sandbox,--disable-setuid-sandbox,--disable-dev-shm-usage` |
-| `CACHE_MAX_SIZE` | 缓存最大条目数 | `100` |
-| `CACHE_TTL_SECONDS` | 缓存 TTL（秒） | `3600` |
-| `POSTER_WIDTH` | 海报宽度（px） | `750` |
-| `POSTER_HEIGHT` | 海报高度（px） | `1334` |
+> 详细说明见 [README.md](./README.md#环境变量)。
 
-## 部署配置（.env.hf）
+### 应用运行变量（`.env` / `process.env`）
 
-| 变量 | 用途 | 示例 |
-|------|------|------|
-| `HF_TOKEN` | HuggingFace Access Token | `hf_xxxxxxxxx` |
-| `HF_USERNAME` | HF 用户名或组织名 | `myuser` |
-| `HF_SPACE_NAME` | Space 名称 | `tarot-poster` |
+| 变量 | 用途 | 默认值 | 必填 | 分组 |
+|------|------|--------|:--:|:--:|
+| `PORT` | 服务端口 | `3000`（HF Spaces: `7860`） | | 服务 |
+| `NODE_ENV` | 运行环境 | `development` | | 服务 |
+| `API_KEY` | API 鉴权密钥（Bearer Token） | 空（不鉴权） | | 安全 |
+| `CORS_ORIGIN` | CORS 允许来源 | `*` | | 安全 |
+| `PUPPETEER_EXECUTABLE_PATH` | Chromium 路径 | 系统自动查找 | | 截图 |
+| `PUPPETEER_ARGS` | Chromium 启动参数（逗号分隔） | `--no-sandbox,--disable-setuid-sandbox,--disable-dev-shm-usage` | | 截图 |
+| `CACHE_MAX_SIZE` | 缓存最大条目数 | `100` | | 性能 |
+| `CACHE_TTL_SECONDS` | 缓存 TTL（秒） | `3600` | | 性能 |
+| `POSTER_WIDTH` | 海报宽度（px） | `750` | | 海报 |
+| `POSTER_HEIGHT` | 海报高度（px） | `1334` | | 海报 |
+
+### HF 部署变量（`.env.hf`，仅部署脚本使用）
+
+| 变量 | 用途 | 示例 | 必填 |
+|------|------|------|:--:|
+| `HF_TOKEN` | HuggingFace Access Token | `hf_xxxxxxxxx` | ✅ |
+| `HF_USERNAME` | HF 用户名或组织名 | `myuser` | ✅ |
+| `HF_SPACE_NAME` | Space 名称 | `tarot-poster` | ✅ |
+
+### 生产/开发关键差异
+
+| 维度 | 开发 | Docker 生产 | HF Spaces 生产 |
+|------|------|-------------|---------------|
+| `NODE_ENV` | `development` | `production` | `production` |
+| `PORT` | `3000` | `3000` | **`7860`**（强制） |
+| `PUPPETEER_EXECUTABLE_PATH` | 不设置 | `/usr/bin/chromium` | `/usr/bin/chromium` |
+| `PUPPETEER_SKIP_DOWNLOAD` | 不设置 | `true` | `true` |
+| `API_KEY` | 通常留空 | ✅ 建议设置 | ✅ 建议设置 |
+
+### 注意事项
+
+- 新增环境变量时，必须在 `src/config.ts` 中添加读取逻辑，并同步更新 `.env.example`、`README.md` 和本文件的环境变量表格
+- `API_KEY` 不配置时鉴权中间件完全跳过，`/poster` 无保护
+- HF Spaces 上 `PORT` 会被平台覆盖为 `7860`，不要在 HF Space 的 Variables 中手动设置 `PORT`
+- Docker 部署必须设置 `--no-sandbox` 参数，否则 Chromium 无法在容器中启动
 
 ## 部署方式
 
