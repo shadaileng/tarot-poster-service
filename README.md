@@ -102,7 +102,9 @@ notepad .env.hf
 
 **根因**：部署架构为 `前端 → Cloudflare Worker → HF Space → Express`。即使 Express 应用层设置了 `Access-Control-Allow-Origin: *`，HF Space 平台的 nginx 反向代理层会自动注入 CORS 响应头覆盖应用层设置，且值固定为 HF Space 自身的域名。
 
-**解决方案**：在 Cloudflare Worker 中拦截并覆盖 HF Space 返回的 CORS 响应头：
+#### 方案一：Cloudflare Worker 中间层拦截
+
+在 Cloudflare Worker 中拦截并覆盖 HF Space 返回的 CORS 响应头：
 
 ```javascript
 // Cloudflare Worker 中处理响应
@@ -124,7 +126,7 @@ return new Response(response.body, {
 
 关键点：不能原样透传 HF Space 的响应头，必须在 Worker 层重新设置 CORS 头为 `*` 或具体的前端域名。
 
-#### 方案：设置 `CORS_ORIGIN` 环境变量（无需 Cloudflare 中间层）
+#### 方案二：设置 `CORS_ORIGIN` 环境变量（无需 Cloudflare 中间层）
 
 如果没有 CDN / Worker 代理层，最直接的方法是在 HF Space 中设置 `CORS_ORIGIN` 环境变量：
 
@@ -140,11 +142,7 @@ return new Response(response.body, {
 
 > **注意**：如果 HF Space 平台的 nginx 反向代理层仍覆盖了 CORS 响应头（以 Space 自身域名为准），此方法无效，需要回到下方自建反向代理或 Cloudflare Worker 方案。
 
-#### 没有 Cloudflare 中间层时的其他替代方案
-
-如果环境变量方式无效且没有 Cloudflare Worker，可用以下方案：
-
-##### 方案一：自建 Nginx / Caddy 反向代理（有 VPS 时）
+#### 方案三：自建 Nginx / Caddy 反向代理（有 VPS 时）
 
 **Nginx 示例配置：**
 
@@ -183,7 +181,7 @@ your-proxy.example.com {
 }
 ```
 
-##### 方案二：Vercel / Netlify Serverless 函数代理
+#### 方案四：Vercel / Netlify Serverless 函数代理
 
 在 Vercel 或 Netlify 上部署轻量代理函数：
 
@@ -211,7 +209,7 @@ export default async function handler(req, res) {
 }
 ```
 
-##### 方案三：后端 BFF 模式
+#### 方案五：后端 BFF 模式
 
 在自有后端增加代理接口，由服务端转发请求（服务端间通信不受浏览器 CORS 限制）：
 
