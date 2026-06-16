@@ -28,4 +28,6 @@ export interface PosterData {
   /** 综合解读文本（优先使用，由调用方提取/生成） */
   comprehensiveInterpretation?: string
   date: string
+  /** 主题选择，默认 'dark' */
+  theme?: 'dark' | 'light'
 }

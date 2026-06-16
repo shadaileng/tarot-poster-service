@@ -5,6 +5,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import type { PosterData, PosterCardInput } from './types.js'
 import { renderTemplate } from './engine.js'
+import { getTheme, themeToCSSVars } from './theme.js'
 
 /** assets/cards 目录的绝对路径 */
 const CARDS_DIR = path.resolve(import.meta.dirname, '../../assets/cards')
@@ -75,13 +76,17 @@ export function buildPosterHTML(data: PosterData): string {
   const cardsHTML = data.cards.map(generateCardHTML).join('')
   const interpretationHTML = generateInterpretationHTML(data)
 
+  // 计算主题 CSS 变量
+  const theme = getTheme(data.theme)
+  const themeCSSVars = themeToCSSVars(theme)
+
   return renderTemplate('default.html', 'default.css', {
     spreadName: data.spreadName,
     date: data.date,
     question: data.question,
     cardsHTML,
     interpretationHTML,
-  })
+  }, themeCSSVars)
 }
 
 function escapeHTML(str: string): string {

@@ -50,9 +50,15 @@ export function renderTemplate(
   templateFile: string,
   cssFile: string,
   vars: TemplateVars,
+  themeCSSVars?: string,
 ): string {
   let html = readTemplate(templateFile)
   const css = readTemplate(cssFile)
+
+  // 注入 CSS 自定义属性到 <style> 占位符（在 CSS 内容之前，不转义）
+  if (themeCSSVars) {
+    html = html.replace('{{ themeCSSVars }}', themeCSSVars)
+  }
 
   // 注入 CSS 到 <style> 占位符
   html = html.replace('{{ css }}', css)
