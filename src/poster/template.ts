@@ -1,13 +1,29 @@
 // 海报 HTML 模板生成
 // 用 CSS 打造暗黑神秘风格海报
 
+import fs from 'node:fs'
+import path from 'node:path'
 import type { PosterData, PosterCardInput } from './types.js'
-import { config } from '../config.js'
 
-/** 从 card.image 中提取文件名，生成本地 SVG 服务 URL */
+/** assets/cards 目录的绝对路径 */
+const CARDS_DIR = path.resolve(import.meta.dirname, '../../assets/cards')
+
+/** 从 card.image 中提取文件名，读取 SVG 并转为 Base64 Data URI（零网络依赖） */
 function resolveCardImage(card: PosterCardInput): string {
   const fileName = card.image.split('/').pop() || ''
-  return `http://localhost:${config.port}/cards/${fileName}`
+  const filePath = path.join(CARDS_DIR, fileName)
+
+  try {
+    const svgContent = fs.readFileSync(filePath, 'utf-8')
+    const base64 = Buffer.from(svgContent).toString('base64')
+    return `data:image/svg+xml;base64,${base64}`
+  } catch (err) {
+    console.error(`[Template] Failed to read card SVG: ${filePath}`, err)
+    // 返回一个占位 data URI（灰色方块），避免海报渲染中断
+    const placeholderSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="260" viewBox="0 0 160 260"><rect width="160" height="260" fill="#2a2a3e"/><text x="80" y="130" text-anchor="middle" fill="#555" font-size="14" font-family="sans-serif">暂无图片</text></svg>`
+    const base64 = Buffer.from(placeholderSvg).toString('base64')
+    return `data:image/svg+xml;base64,${base64}`
+  }
 }
 
 /** 提取 "✨ 综合解读" 之后的内容，去掉前面逐张牌的个性化解读 */

@@ -50,9 +50,9 @@ export async function renderPoster(html: string): Promise<Buffer> {
       deviceScaleFactor: 2,
     })
 
-    // 加载 HTML
+    // 加载 HTML（使用 'load' 而非 'networkidle0'，因为 SVG 已内嵌为 Base64 Data URI，无需网络请求）
     await page.setContent(html, {
-      waitUntil: 'networkidle0',
+      waitUntil: 'load',
       timeout: 15000,
     })
 
