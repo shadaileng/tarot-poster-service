@@ -1,11 +1,12 @@
 // 浏览器 Page 池化
-// 预创建/复用 Page，控制并发数，避免每次请求都 newPage + close
+// 池的核心价值：控制并发 Page 数量，避免同时打开过多页面耗尽资源
+// Page 对象用完即关，不复用（newPage() 开销极低，但复用会引入僵尸 Page 风险）
 
 import { type Browser, type Page } from 'puppeteer'
 import { config } from '../config.js'
 
 export interface PoolStats {
-  available: number
+  available: number // 始终为 0（Page 不复用）
   active: number
   waiting: number
   maxPages: number
@@ -22,7 +23,6 @@ export class BrowserPool {
   private maxPages: number
   private acquireTimeoutMs: number
 
-  private availablePages: Page[] = []
   private activePages: Set<Page> = new Set()
   private waitQueue: QueueEntry[] = []
 
@@ -40,14 +40,7 @@ export class BrowserPool {
       throw new Error('BrowserPool is shutting down')
     }
 
-    // 有空闲 Page，直接返回
-    if (this.availablePages.length > 0) {
-      const page = this.availablePages.pop()!
-      this.activePages.add(page)
-      return page
-    }
-
-    // 还有配额，创建新 Page
+    // 还有配额，创建新 Page（不复用旧 Page）
     if (this.activePages.size < this.maxPages) {
       const page = await this.browser.newPage()
       this.activePages.add(page)
@@ -73,53 +66,16 @@ export class BrowserPool {
     })
   }
 
-  /** 归还 Page 到池中，清理状态 */
+  /** 归还 Page — 直接关闭，不复用，避免僵尸 Page 风险 */
   async release(page: Page): Promise<void> {
     this.activePages.delete(page)
 
-    // 检查 Page 是否仍然有效
+    // 直接关闭 Page，不复用
     try {
-      // 检查 Page 是否已断开（isClosed 可能在旧版不存在，用 try-catch 兜底）
-      if (page.isClosed && page.isClosed()) {
-        // Page 已关闭，丢弃，不归还
-        this.processQueue()
-        return
-      }
+      await page.close()
     } catch {
-      // 无法判断，尝试清理后丢弃
-      this.processQueue()
-      return
+      // 静默忽略关闭失败（Page 可能已断开）
     }
-
-    try {
-      // 清理 Page 状态：导航到空白页，释放 DOM 和内存
-      await page.goto('about:blank', { waitUntil: 'domcontentloaded', timeout: 5000 })
-    } catch {
-      // 导航失败，关闭这个 Page，创建新 Page 补充
-      try {
-        await page.close()
-      } catch {
-        // 静默忽略关闭失败
-      }
-      this.processQueue()
-      return
-    }
-
-    // 清理 cookies / localStorage / sessionStorage（可选）
-    try {
-      const client = await page.createCDPSession()
-      await client.send('Network.clearBrowserCookies')
-      await client.send('Network.clearBrowserCache')
-      await client.detach()
-    } catch {
-      // CDP 清理失败不影响后续使用
-    }
-
-    // 清理事件监听器（避免累积）
-    page.removeAllListeners()
-
-    // 归还到可用池
-    this.availablePages.push(page)
 
     // 通知等待队列
     this.processQueue()
@@ -136,9 +92,8 @@ export class BrowserPool {
     }
     this.waitQueue = []
 
-    // 关闭所有空闲 Page
-    const allPages = [...this.availablePages, ...this.activePages]
-    this.availablePages = []
+    // 关闭所有活跃 Page
+    const allPages = [...this.activePages]
     this.activePages.clear()
 
     await Promise.allSettled(
@@ -155,36 +110,28 @@ export class BrowserPool {
   /** 获取池状态 */
   get stats(): PoolStats {
     return {
-      available: this.availablePages.length,
+      available: 0,
       active: this.activePages.size,
       waiting: this.waitQueue.length,
       maxPages: this.maxPages,
     }
   }
 
-  /** 处理等待队列：有空闲配额时分发 Page */
+  /** 处理等待队列：有空闲配额时创建新 Page 分发给等待者 */
   private processQueue(): void {
     while (this.waitQueue.length > 0 && this.activePages.size < this.maxPages) {
       const entry = this.waitQueue.shift()!
       clearTimeout(entry.timer)
 
-      // 优先从空闲池取，否则创建新 Page
-      if (this.availablePages.length > 0) {
-        const page = this.availablePages.pop()!
-        this.activePages.add(page)
-        entry.resolve(page)
-      } else {
-        // 理论上走不到这里，但作为安全分支
-        this.browser
-          .newPage()
-          .then((page) => {
-            this.activePages.add(page)
-            entry.resolve(page)
-          })
-          .catch((e) => {
-            entry.reject(e)
-          })
-      }
+      this.browser
+        .newPage()
+        .then((page) => {
+          this.activePages.add(page)
+          entry.resolve(page)
+        })
+        .catch((e) => {
+          entry.reject(e)
+        })
     }
   }
 }
@@ -194,13 +141,19 @@ let poolPromise: Promise<BrowserPool> | null = null
 
 export async function getBrowserPool(browser: Browser): Promise<BrowserPool> {
   if (poolPromise) {
-    const pool = await poolPromise
-    if (!pool.stats.maxPages) {
-      // pool 已 shutdown，重新创建
-      poolPromise = null
-    } else {
-      return pool
+    try {
+      const pool = await poolPromise
+      // 检查旧池引用的 browser 是否仍然连接
+      if (pool.stats.maxPages > 0 && browser.isConnected()) {
+        return pool
+      }
+      // 旧 browser 已断开，关闭旧池重建
+      console.warn('[BrowserPool] Browser disconnected, recreating pool...')
+      await pool.shutdown()
+    } catch {
+      // poolPromise 异常，重建
     }
+    poolPromise = null
   }
 
   poolPromise = Promise.resolve(
