@@ -53,10 +53,11 @@ describe('poster template', () => {
     expect(html).toContain('&lt;script&gt;alert')
   })
 
-  it('should resolve card image to local SVG path', () => {
+  it('should embed card images as base64 data URI', () => {
     const html = buildPosterHTML(mockData)
-    expect(html).toContain('http://localhost:3000/cards/major-00.svg')
-    expect(html).toContain('http://localhost:3000/cards/major-02.svg')
+    expect(html).toContain('data:image/svg+xml;base64,')
+    // 不应包含远程 URL
+    expect(html).not.toContain('http://localhost:3000/cards/')
   })
 
   it('should only show comprehensive interpretation after ✨ 综合解读', () => {
