@@ -101,8 +101,23 @@ export async function closeBrowser(): Promise<void> {
 process.on('SIGTERM', () => { void closeBrowser() })
 process.on('SIGINT', () => { void closeBrowser() })
 
+/** 渲染各阶段耗时 */
+export interface RenderStageTiming {
+  /** HTML 设置耗时 (ms) */
+  setContentMs: number
+  /** 资源等待耗时 (ms) */
+  resourceMs: number
+  /** 合成等待耗时 (ms) */
+  composeMs: number
+  /** 截图耗时 (ms) */
+  screenshotMs: number
+  /** 总耗时 (ms) */
+  totalMs: number
+}
+
 // ========== 截图渲染 ==========
-export async function renderPoster(html: string, width?: number): Promise<Buffer> {
+export async function renderPoster(html: string, width?: number): Promise<{ buffer: Buffer; timings: RenderStageTiming }> {
+  const renderStart = Date.now()
   const browser = await getBrowser()
   const pool = await getBrowserPool(browser)
   const page = await pool.acquire()
@@ -129,13 +144,16 @@ export async function renderPoster(html: string, width?: number): Promise<Buffer
       deviceScaleFactor: 2,
     })
 
-    // 加载 HTML（使用 'domcontentloaded'，后续有独立的资源就绪检查）
+    // 阶段 1：加载 HTML（使用 'domcontentloaded'，后续有独立的资源就绪检查）
+    const setContentStart = Date.now()
     await page.setContent(html, {
       waitUntil: 'domcontentloaded',
       timeout: 30000,
     })
+    const setContentMs = Date.now() - setContentStart
 
-    // ========== 增强资源就绪检查 ==========
+    // 阶段 2：增强资源就绪检查
+    const resourceStart = Date.now()
     // ① 等待所有 <img> complete 且 naturalWidth > 0
     // ② 执行 img.decode() 强制 GPU 纹理上传
     // ③ 等待 document.fonts.ready（字体渲染完成）
@@ -170,21 +188,29 @@ export async function renderPoster(html: string, width?: number): Promise<Buffer
         await document.fonts.ready
       }
     })
+    const resourceMs = Date.now() - resourceStart
 
+    // 阶段 3：合成等待
+    const composeStart = Date.now()
     // ④ 额外等待 100ms 让浏览器完成合成管线
     await new Promise((resolve) => setTimeout(resolve, 100))
 
     // ⑤ 最终等待 .poster-ready 选择器（确保 CSS 动画/过渡完成）
     await page.waitForSelector('.poster-ready', { timeout: 10000 })
-    // ========== 资源就绪检查结束 ==========
+    const composeMs = Date.now() - composeStart
 
-    // 截图
+    // 阶段 4：截图
+    const screenshotStart = Date.now()
     const screenshot = await page.screenshot({
       type: 'png',
       fullPage: true,
     })
+    const screenshotMs = Date.now() - screenshotStart
 
-    return Buffer.from(screenshot)
+    const totalMs = Date.now() - renderStart
+    const timings: RenderStageTiming = { setContentMs, resourceMs, composeMs, screenshotMs, totalMs }
+
+    return { buffer: Buffer.from(screenshot), timings }
   } catch (error) {
     // ========== 错误诊断抓取 ==========
     const errMsg = error instanceof Error ? error.message : String(error)

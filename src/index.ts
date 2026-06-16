@@ -13,6 +13,7 @@ import { renderPoster } from './poster/render.js'
 import { getPoolStats } from './poster/browser-pool.js'
 import { posterCache } from './cache/index.js'
 import { getTemplate } from './poster/templates/index.js'
+import { metrics } from './monitor/index.js'
 import type { PosterData } from './poster/types.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -34,6 +35,7 @@ app.get('/', (_req, res) => {
     endpoints: {
       health: 'GET /health',
       poster: 'POST /poster',
+      metrics: 'GET /metrics',
     },
   })
 })
@@ -41,21 +43,39 @@ app.get('/', (_req, res) => {
 // ========== 健康检查 ==========
 app.get('/health', async (_req, res) => {
   const poolStats = await getPoolStats()
+  const snap = metrics.getSnapshot()
   res.json({
     status: 'ok',
     cache: {
       size: posterCache.size,
       maxSize: posterCache.maxSize,
+      hitRate: snap.cacheHitRate,
     },
     pool: poolStats ?? { available: 0, active: 0, waiting: 0, maxPages: config.pool.maxPages },
+    metrics: {
+      totalRequests: snap.totalRequests,
+      errors: snap.errorCount,
+      avgTotalMs: Math.round(snap.avgTotalMs),
+      renderP50: snap.totalP50,
+      renderP95: snap.totalP95,
+      renderP99: snap.totalP99,
+    },
   })
+})
+
+// ========== Prometheus 指标端点 ==========
+app.get('/metrics', (_req, res) => {
+  res.set('Content-Type', 'text/plain; version=0.0.4; charset=utf-8')
+  res.send(metrics.toPrometheus())
 })
 
 // ========== 海报生成 API ==========
 app.post('/poster', authMiddleware, async (req, res) => {
-  try {
-    const posterData = req.body as PosterData
+  const requestStart = Date.now()
+  const posterData = req.body as PosterData
+  const template = getTemplate(posterData.template)
 
+  try {
     // 参数校验
     if (!posterData.cards || !Array.isArray(posterData.cards) || posterData.cards.length === 0) {
       res.status(400).json({ error: 'Invalid request: cards array is required' })
@@ -70,22 +90,54 @@ app.post('/poster', authMiddleware, async (req, res) => {
       res.set('X-Cache', 'HIT')
       res.set('Cache-Control', 'public, max-age=3600')
       res.send(cached)
+
+      // 记录缓存命中指标
+      metrics.recordRender({
+        templateMs: 0,
+        resourceMs: 0,
+        screenshotMs: 0,
+        totalMs: Date.now() - requestStart,
+        timestamp: requestStart,
+        template: template.name,
+        cacheHit: true,
+      })
       return
     }
 
-    // 生成海报（根据模板参数获取宽度）
-    const template = getTemplate(posterData.template)
+    // 阶段 1：模板生成
+    const templateStart = Date.now()
     const html = buildPosterHTML(posterData)
-    const imageBuffer = await renderPoster(html, template.width)
+    const templateMs = Date.now() - templateStart
+
+    // 阶段 2：截图（含资源等待、合成、截图）
+    const { buffer: imageBuffer, timings } = await renderPoster(html, template.width)
 
     // 缓存
     posterCache.set(cacheKey, imageBuffer)
 
+    const totalMs = Date.now() - requestStart
+
+    // 记录精确渲染指标
+    metrics.recordRender({
+      templateMs,
+      resourceMs: timings.resourceMs,
+      screenshotMs: timings.screenshotMs,
+      totalMs,
+      timestamp: requestStart,
+      template: template.name,
+      cacheHit: false,
+    })
+
     res.set('Content-Type', 'image/png')
     res.set('X-Cache', 'MISS')
+    res.set('X-Render-Template-Ms', String(templateMs))
+    res.set('X-Render-Resource-Ms', String(timings.resourceMs))
+    res.set('X-Render-Screenshot-Ms', String(timings.screenshotMs))
+    res.set('X-Render-Total-Ms', String(totalMs))
     res.set('Cache-Control', 'public, max-age=3600')
     res.send(imageBuffer)
   } catch (error) {
+    metrics.recordError()
     console.error('Poster generation failed:', error)
     res.status(500).json({ error: 'Poster generation failed' })
   }
