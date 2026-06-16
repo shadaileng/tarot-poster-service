@@ -50,10 +50,10 @@ export async function renderPoster(html: string): Promise<Buffer> {
       deviceScaleFactor: 2,
     })
 
-    // 加载 HTML（使用 'load' 而非 'networkidle0'，因为 SVG 已内嵌为 Base64 Data URI，无需网络请求）
+    // 加载 HTML（使用 'domcontentloaded'，后续有独立的资源就绪检查）
     await page.setContent(html, {
-      waitUntil: 'load',
-      timeout: 15000,
+      waitUntil: 'domcontentloaded',
+      timeout: 30000,
     })
 
     // ========== 增强资源就绪检查 ==========
