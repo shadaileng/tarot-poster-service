@@ -4,23 +4,79 @@
 import puppeteer, { type Browser } from 'puppeteer'
 import { config } from '../config.js'
 
-// ========== 浏览器连接池 ==========
+// ========== 浏览器连接池 + 自动重连 ==========
 let browserPromise: Promise<Browser> | null = null
+let healthCheckTimer: ReturnType<typeof setInterval> | null = null
+const HEALTH_CHECK_INTERVAL_MS = 30_000
 
-function getBrowser(): Promise<Browser> {
-  if (!browserPromise) {
-    console.log('[Puppeteer] Launching browser...')
-    browserPromise = puppeteer.launch({
-      headless: true,
-      executablePath: config.puppeteer.executablePath,
-      args: config.puppeteer.args,
-    })
+/** 启动周期性浏览器健康检查（不阻止进程退出） */
+function startHealthCheck(): void {
+  if (healthCheckTimer) return
+  healthCheckTimer = setInterval(async () => {
+    if (!browserPromise) return
+    try {
+      const browser = await browserPromise
+      if (!browser.isConnected()) {
+        console.warn('[Puppeteer] Health check: browser disconnected, resetting...')
+        browserPromise = null
+      }
+    } catch {
+      console.warn('[Puppeteer] Health check: browser promise rejected, resetting...')
+      browserPromise = null
+    }
+  }, HEALTH_CHECK_INTERVAL_MS)
+  healthCheckTimer.unref()
+}
+
+/** 停止健康检查 */
+function stopHealthCheck(): void {
+  if (healthCheckTimer) {
+    clearInterval(healthCheckTimer)
+    healthCheckTimer = null
   }
-  return browserPromise
+}
+
+async function getBrowser(): Promise<Browser> {
+  // ① 检查现有浏览器是否仍然连接
+  if (browserPromise) {
+    try {
+      const browser = await browserPromise
+      if (browser.isConnected()) {
+        return browser
+      }
+      console.warn('[Puppeteer] Browser disconnected, re-launching...')
+      browserPromise = null
+    } catch (e) {
+      console.warn('[Puppeteer] Existing browser promise rejected, re-launching:', (e as Error).message)
+      browserPromise = null
+    }
+  }
+
+  // ② 启动新浏览器
+  console.log('[Puppeteer] Launching browser...')
+  browserPromise = puppeteer.launch({
+    headless: true,
+    executablePath: config.puppeteer.executablePath,
+    args: config.puppeteer.args,
+  })
+
+  // ③ 注册 disconnected 事件监听（主动感知崩溃）
+  const browser = await browserPromise
+  browser.on('disconnected', () => {
+    console.warn('[Puppeteer] Browser disconnected event fired, resetting...')
+    browserPromise = null
+    stopHealthCheck()
+  })
+
+  // ④ 启动健康检查（双保险）
+  startHealthCheck()
+
+  return browser
 }
 
 // 优雅关闭浏览器
 export async function closeBrowser(): Promise<void> {
+  stopHealthCheck()
   if (browserPromise) {
     try {
       const browser = await browserPromise
@@ -107,6 +163,10 @@ export async function renderPoster(html: string): Promise<Buffer> {
 
     return Buffer.from(screenshot)
   } finally {
-    await page.close()
+    try {
+      await page.close()
+    } catch (e) {
+      console.warn('[Puppeteer] Error closing page (may already be closed):', (e as Error).message)
+    }
   }
 }
