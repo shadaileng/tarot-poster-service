@@ -27,4 +27,10 @@ export const config = {
     width: parseInt(process.env.POSTER_WIDTH || '750', 10),
     height: parseInt(process.env.POSTER_HEIGHT || '1334', 10),
   },
+
+  // 浏览器 Page 池配置
+  pool: {
+    maxPages: parseInt(process.env.POOL_MAX_PAGES || '4', 10),
+    acquireTimeoutMs: parseInt(process.env.POOL_ACQUIRE_TIMEOUT_MS || '30000', 10),
+  },
 }

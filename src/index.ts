@@ -10,6 +10,7 @@ import { corsMiddleware } from './middleware/cors.js'
 import { authMiddleware } from './middleware/auth.js'
 import { buildPosterHTML } from './poster/template.js'
 import { renderPoster } from './poster/render.js'
+import { getPoolStats } from './poster/browser-pool.js'
 import { posterCache } from './cache/index.js'
 import type { PosterData } from './poster/types.js'
 
@@ -37,13 +38,15 @@ app.get('/', (_req, res) => {
 })
 
 // ========== 健康检查 ==========
-app.get('/health', (_req, res) => {
+app.get('/health', async (_req, res) => {
+  const poolStats = await getPoolStats()
   res.json({
     status: 'ok',
     cache: {
       size: posterCache.size,
       maxSize: posterCache.maxSize,
     },
+    pool: poolStats ?? { available: 0, active: 0, waiting: 0, maxPages: config.pool.maxPages },
   })
 })
 

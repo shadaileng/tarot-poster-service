@@ -6,6 +6,7 @@ import path from 'node:path'
 import os from 'node:os'
 import puppeteer, { type Browser, type ConsoleMessage } from 'puppeteer'
 import { config } from '../config.js'
+import { getBrowserPool, closeBrowserPool } from './browser-pool.js'
 
 // ========== 浏览器连接池 + 自动重连 ==========
 let browserPromise: Promise<Browser> | null = null
@@ -80,6 +81,10 @@ async function getBrowser(): Promise<Browser> {
 // 优雅关闭浏览器
 export async function closeBrowser(): Promise<void> {
   stopHealthCheck()
+
+  // 先关闭 BrowserPool
+  await closeBrowserPool()
+
   if (browserPromise) {
     try {
       const browser = await browserPromise
@@ -99,7 +104,8 @@ process.on('SIGINT', () => { void closeBrowser() })
 // ========== 截图渲染 ==========
 export async function renderPoster(html: string): Promise<Buffer> {
   const browser = await getBrowser()
-  const page = await browser.newPage()
+  const pool = await getBrowserPool(browser)
+  const page = await pool.acquire()
 
   // ========== 诊断日志收集 ==========
   const consoleLogs: { type: string; text: string }[] = []
@@ -229,10 +235,11 @@ export async function renderPoster(html: string): Promise<Buffer> {
     page.off('console', onConsole)
     page.off('pageerror', onPageError)
 
+    // 归还 Page 到池中（替代原来的 page.close()）
     try {
-      await page.close()
+      await pool.release(page)
     } catch (e) {
-      console.warn('[Puppeteer] Error closing page (may already be closed):', (e as Error).message)
+      console.warn('[Puppeteer] Error releasing page to pool:', (e as Error).message)
     }
   }
 }
