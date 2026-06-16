@@ -6,12 +6,13 @@ FROM node:20-slim
 # 安装 pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# 安装 Chromium + 中文字体
+# 安装 Chromium + 中文字体 + emoji 字体
 RUN apt-get update && apt-get install -y \
   chromium \
   chromium-sandbox \
   fonts-noto-cjk \
   fonts-noto-cjk-extra \
+  fonts-noto-color-emoji \
   --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
