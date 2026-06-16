@@ -1,6 +1,6 @@
 # 🃏 塔罗海报生成服务 — 开发规划书
 
-> 版本: v1.2 | 日期: 2026-06-16 | 状态: Phase 1 已完成，Phase 2-4 规划中
+> 版本: v1.3 | 日期: 2026-06-16 | 状态: Phase 1-2 已完成，Phase 3 部分完成
 
 ---
 
@@ -57,10 +57,10 @@ POST /poster  ──→  authMiddleware
 | Google Fonts 加载延迟 | 🔴 高 | ✅ 已修复 (1.2) | Noto Serif SC 在线字体可能未就绪即截图，出现缺字 |
 | 浏览器单例无重连机制 | 🟡 中 | ✅ 已修复 (1.3) | 浏览器崩溃后所有后续请求失败 |
 | 无错误诊断抓取 | 🟡 中 | ✅ 已修复 (1.4) | 渲染失败时缺少页面状态快照，难以排查 |
-| HTML 模板耦合在 TS 中 | 🟡 中 | 待处理 (2.1) | 300+ 行模板字符串，CSS 无语法高亮，难以维护 |
-| 无并发渲染能力 | 🟢 低 | 待处理 (2.3) | 单 Page 串行，高并发时响应慢 |
-| 设计令牌硬编码 | 🟢 低 | 待处理 (2.2) | 颜色/字号/间距写死在模板字符串中，无法切换主题 |
-| 缺乏性能监控 | 🟢 低 | 待处理 (3.2) | 无渲染耗时、缓存命中率等指标 |
+| HTML 模板耦合在 TS 中 | 🟡 中 | ✅ 已修复 (2.1) | 300+ 行模板字符串，CSS 无语法高亮，难以维护 |
+| 无并发渲染能力 | 🟢 低 | ✅ 已修复 (2.3) | 单 Page 串行，高并发时响应慢 |
+| 设计令牌硬编码 | 🟢 低 | ✅ 已修复 (2.2) | 颜色/字号/间距写死在模板字符串中，无法切换主题 |
+| 缺乏性能监控 | 🟢 低 | ✅ 已修复 (3.2) | 无渲染耗时、缓存命中率等指标 |
 
 ---
 
@@ -139,11 +139,11 @@ POST /poster  ──→  authMiddleware
 
 ---
 
-### Phase 2: 架构优化（优先级 🟡 中）
+### Phase 2: 架构优化（优先级 🟡 中） ✅ 已完成
 
 **目标**：提升代码可维护性和开发体验，为后续扩展打基础。
 
-#### 任务 2.1 — HTML 模板外挂化
+#### 任务 2.1 — HTML 模板外挂化 ✅
 
 **文件**：`src/poster/template.ts` → `src/poster/templates/default.html` + `src/poster/template.ts`（重构）
 
@@ -172,7 +172,7 @@ src/poster/
 - HTML/CSS 可在浏览器中直接预览
 - AI Agent 可直接生成/修改 HTML 模板
 
-#### 任务 2.2 — 设计令牌系统（Design Tokens）
+#### 任务 2.2 — 设计令牌系统（Design Tokens） ✅
 
 **文件**：`src/poster/theme.ts`（新建）
 
@@ -219,7 +219,7 @@ interface PosterTheme {
 
 **预期收益**：主题切换零代码成本，支持用户自定义品牌色。
 
-#### 任务 2.3 — 浏览器 Page 池化
+#### 任务 2.3 — 浏览器 Page 池化 ✅
 
 **文件**：`src/poster/render.ts` → `src/poster/browser-pool.ts`（新建）
 
@@ -237,7 +237,7 @@ interface PosterTheme {
 
 **目标**：增加新功能，提升用户体验和业务价值。
 
-#### 任务 3.1 — 多模板支持
+#### 任务 3.1 — 多模板支持 ✅
 
 **文件**：`src/poster/templates/` 目录扩展
 
@@ -247,7 +247,7 @@ interface PosterTheme {
 - `wechat`：适配微信朋友圈 9:16 比例（1080×1920）
 - 模板注册表：`src/poster/templates/index.ts` 自动扫描目录
 
-#### 任务 3.2 — 性能监控仪表板
+#### 任务 3.2 — 性能监控仪表板 ✅
 
 **文件**：`src/monitor/` 目录（新建）
 
@@ -310,19 +310,19 @@ Response: image/png
 ### 未来 API
 
 ```
-# Phase 2: 增加主题参数
+# Phase 2: 增加主题参数 ✅
 POST /poster
 Body: { ...PosterData, theme?: 'dark' | 'light' }
 
-# Phase 3: 增加模板参数
+# Phase 3: 增加模板参数 ✅
 POST /poster
 Body: { ...PosterData, template?: 'default' | 'minimal' | 'wechat' }
 
-# Phase 3: 性能监控
+# Phase 3: 性能监控 ✅
 GET /metrics
 Response: text/plain (Prometheus)
 
-# Phase 3: 动画海报
+# Phase 3: 动画海报 🔜
 POST /poster/video
 Body: { ...PosterData, duration?: number, fps?: number }
 Response: video/mp4
@@ -407,20 +407,20 @@ Week 1-2  ████████  Phase 1: 稳定性修复 ✅ 已完成
           ├── 1.3 浏览器重连机制 ✅
           └── 1.4 错误诊断抓取 ✅
 
-Week 3-4  ████████  Phase 2: 架构优化 🔜 待启动
-          ├── 2.1 HTML 模板外挂化
-          ├── 2.2 设计令牌系统
-          └── 2.3 浏览器 Page 池化
+Week 3-4  ████████  Phase 2: 架构优化 ✅ 已完成
+          ├── 2.1 HTML 模板外挂化 ✅
+          ├── 2.2 设计令牌系统 ✅
+          └── 2.3 浏览器 Page 池化 ✅
 
-Week 5-6  ████████  Phase 3: 功能扩展
-          ├── 3.1 多模板支持
-          └── 3.2 性能监控仪表板
+Week 5-6  ████████  Phase 3: 功能扩展 🔄 进行中
+          ├── 3.1 多模板支持 ✅
+          ├── 3.2 性能监控仪表板 ✅
+          └── 3.3 动画海报 🔜
 
-Week 7+   ████████  Phase 4: 工程化增强 + 动画海报
+Week 7+   ████████  Phase 4: 工程化增强 🔜 待启动
           ├── 4.1 测试覆盖率提升
           ├── 4.2 CI/CD 流水线
-          ├── 4.3 日志标准化
-          └── 3.3 动画海报（调研 + POC）
+          └── 4.3 日志标准化
 ```
 
 ---
