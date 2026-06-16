@@ -96,7 +96,7 @@ export function buildPosterHTML(data: PosterData): string {
 
   body {
     width: 750px;
-    font-family: 'Noto Serif SC', 'SimSun', serif;
+    font-family: 'Noto Serif SC', 'SimSun', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', serif;
     background: linear-gradient(160deg, #0a0a1a 0%, #1a1a2e 40%, #16213e 100%);
     color: #e0d8c8;
     min-height: 1334px;
