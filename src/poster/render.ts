@@ -102,7 +102,7 @@ process.on('SIGTERM', () => { void closeBrowser() })
 process.on('SIGINT', () => { void closeBrowser() })
 
 // ========== 截图渲染 ==========
-export async function renderPoster(html: string): Promise<Buffer> {
+export async function renderPoster(html: string, width?: number): Promise<Buffer> {
   const browser = await getBrowser()
   const pool = await getBrowserPool(browser)
   const page = await pool.acquire()
@@ -122,9 +122,9 @@ export async function renderPoster(html: string): Promise<Buffer> {
   page.on('pageerror', onPageError)
 
   try {
-    // 设置视口（2x 高清）
+    // 设置视口（2x 高清）；宽度由模板决定，高度仅作初始值，fullPage 截图自动捕获全高
     await page.setViewport({
-      width: config.poster.width,
+      width: width ?? config.poster.width,
       height: config.poster.height,
       deviceScaleFactor: 2,
     })

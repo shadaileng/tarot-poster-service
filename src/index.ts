@@ -12,6 +12,7 @@ import { buildPosterHTML } from './poster/template.js'
 import { renderPoster } from './poster/render.js'
 import { getPoolStats } from './poster/browser-pool.js'
 import { posterCache } from './cache/index.js'
+import { getTemplate } from './poster/templates/index.js'
 import type { PosterData } from './poster/types.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -72,9 +73,10 @@ app.post('/poster', authMiddleware, async (req, res) => {
       return
     }
 
-    // 生成海报
+    // 生成海报（根据模板参数获取宽度）
+    const template = getTemplate(posterData.template)
     const html = buildPosterHTML(posterData)
-    const imageBuffer = await renderPoster(html)
+    const imageBuffer = await renderPoster(html, template.width)
 
     // 缓存
     posterCache.set(cacheKey, imageBuffer)

@@ -20,6 +20,9 @@ export interface PosterCardInput {
   number: number
 }
 
+/** 模板名称类型 */
+export type TemplateName = 'default' | 'minimal' | 'wechat'
+
 export interface PosterData {
   cards: PosterCardInput[]
   question: string
@@ -30,4 +33,6 @@ export interface PosterData {
   date: string
   /** 主题选择，默认 'dark' */
   theme?: 'dark' | 'light'
+  /** 模板选择，默认 'default' */
+  template?: TemplateName
 }

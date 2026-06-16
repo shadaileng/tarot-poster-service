@@ -39,6 +39,7 @@ export class LRUCache {
       date: data.date,
       comprehensiveInterpretation: data.comprehensiveInterpretation || '',
       theme: data.theme || 'dark',
+      template: data.template || 'default',
     })
     return createHash('sha256').update(normalized).digest('hex').slice(0, 16)
   }

@@ -6,6 +6,7 @@ import path from 'node:path'
 import type { PosterData, PosterCardInput } from './types.js'
 import { renderTemplate } from './engine.js'
 import { getTheme, themeToCSSVars } from './theme.js'
+import { getTemplate } from './templates/index.js'
 
 /** assets/cards 目录的绝对路径 */
 const CARDS_DIR = path.resolve(import.meta.dirname, '../../assets/cards')
@@ -73,14 +74,15 @@ function generateInterpretationHTML(data: PosterData): string {
  * 最终由 renderTemplate() 注入到模板文件
  */
 export function buildPosterHTML(data: PosterData): string {
+  const template = getTemplate(data.template)
   const cardsHTML = data.cards.map(generateCardHTML).join('')
   const interpretationHTML = generateInterpretationHTML(data)
 
-  // 计算主题 CSS 变量
-  const theme = getTheme(data.theme)
+  // 如果没有指定 theme，使用模板默认主题
+  const theme = getTheme(data.theme || template.defaultTheme)
   const themeCSSVars = themeToCSSVars(theme)
 
-  return renderTemplate('default.html', 'default.css', {
+  return renderTemplate(template.html, template.css, {
     spreadName: data.spreadName,
     date: data.date,
     question: data.question,
