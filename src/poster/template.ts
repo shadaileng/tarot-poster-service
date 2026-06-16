@@ -54,7 +54,27 @@ export function buildPosterHTML(data: PosterData): string {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=750, initial-scale=1">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap');
+  /* 本地字体声明，替代 Google Fonts CDN */
+  @font-face {
+    font-family: 'Noto Serif SC';
+    font-style: normal;
+    font-weight: 400;
+    src: local('Noto Serif CJK SC');
+  }
+
+  @font-face {
+    font-family: 'Noto Serif SC';
+    font-style: normal;
+    font-weight: 600;
+    src: local('Noto Serif CJK SC Bold');
+  }
+
+  @font-face {
+    font-family: 'Noto Serif SC';
+    font-style: normal;
+    font-weight: 700;
+    src: local('Noto Serif CJK SC Bold');
+  }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
