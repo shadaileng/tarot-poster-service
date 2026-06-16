@@ -1,7 +1,10 @@
 // Puppeteer 截图逻辑（含浏览器连接池）
 // 复用浏览器实例，避免每次请求都 launch + close
 
-import puppeteer, { type Browser } from 'puppeteer'
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import os from 'node:os'
+import puppeteer, { type Browser, type ConsoleMessage } from 'puppeteer'
 import { config } from '../config.js'
 
 // ========== 浏览器连接池 + 自动重连 ==========
@@ -98,6 +101,20 @@ export async function renderPoster(html: string): Promise<Buffer> {
   const browser = await getBrowser()
   const page = await browser.newPage()
 
+  // ========== 诊断日志收集 ==========
+  const consoleLogs: { type: string; text: string }[] = []
+  const pageErrors: string[] = []
+
+  const onConsole = (msg: ConsoleMessage) => {
+    consoleLogs.push({ type: msg.type(), text: msg.text() })
+  }
+  const onPageError = (err: Error) => {
+    pageErrors.push(`${err.name}: ${err.message}`)
+  }
+
+  page.on('console', onConsole)
+  page.on('pageerror', onPageError)
+
   try {
     // 设置视口（2x 高清）
     await page.setViewport({
@@ -162,7 +179,56 @@ export async function renderPoster(html: string): Promise<Buffer> {
     })
 
     return Buffer.from(screenshot)
+  } catch (error) {
+    // ========== 错误诊断抓取 ==========
+    const errMsg = error instanceof Error ? error.message : String(error)
+    console.error(`[Puppeteer] renderPoster failed: ${errMsg}`)
+
+    let diagnosticHtml: string | null = null
+    let failureScreenshotPath: string | null = null
+    let failureScreenshotSize: number | null = null
+
+    // ① 捕获 page.content() 作为诊断 HTML
+    try {
+      diagnosticHtml = await page.content()
+    } catch (e) {
+      console.error('[Puppeteer] Diagnostic - Failed to capture page HTML:', (e as Error).message)
+    }
+
+    // ② 尝试 page.screenshot() 获取失败时页面快照，保存到临时文件
+    try {
+      const failureScreenshot = await page.screenshot({
+        type: 'png',
+        fullPage: true,
+      })
+      const tmpDir = os.tmpdir()
+      const filename = `tarot-poster-error-${Date.now()}.png`
+      failureScreenshotPath = path.join(tmpDir, filename)
+      await fs.writeFile(failureScreenshotPath, failureScreenshot)
+      failureScreenshotSize = failureScreenshot.length
+    } catch (e) {
+      console.error('[Puppeteer] Diagnostic - Failed to capture failure screenshot:', (e as Error).message)
+    }
+
+    // ③ 输出结构化诊断日志
+    console.error('[Puppeteer] Render diagnostics:', JSON.stringify({
+      error: errMsg,
+      htmlPreview: diagnosticHtml ? diagnosticHtml.slice(0, 2000) : null,
+      failureScreenshot: failureScreenshotPath
+        ? { path: failureScreenshotPath, size: failureScreenshotSize }
+        : null,
+      consoleLogs: consoleLogs.length > 0 ? consoleLogs.slice(-50) : [],
+      pageErrors: pageErrors.length > 0 ? pageErrors : [],
+      timestamp: new Date().toISOString(),
+    }))
+
+    // 重新抛出原始错误
+    throw error
   } finally {
+    // 清理监听器防止内存泄漏
+    page.off('console', onConsole)
+    page.off('pageerror', onPageError)
+
     try {
       await page.close()
     } catch (e) {
