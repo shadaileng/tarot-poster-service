@@ -75,12 +75,43 @@ git commit -m "fix"          # ❌ 缺少 scope 和描述
 git add . && git commit -m "feat: 大版本更新"  # ❌ 全量暂存 + 海量文件
 ```
 
+## 文档同步更新
+
+每次提交后，根据 commit type 判断是否需要更新项目文档。
+
+### CHANGELOG.md
+
+| commit type | 是否更新 | CHANGELOG 归类 |
+|-------------|:---:|------|
+| `feat` | **必须** | `### Added` |
+| `fix` | **必须** | `### Fixed` |
+| `BREAKING CHANGE` / `feat!` / `fix!` | **必须** | `### Changed`（标注 **BREAKING**） |
+| `docs` / `style` / `refactor` / `perf` / `test` | 建议 | 按实际变更归类 |
+| `chore` / `ci` | 跳过 | — |
+
+格式遵循 Keep a Changelog，版本号格式：`## [x.y.z] - YYYY-MM-DD`
+
+### README.md / AGENTS.md
+
+- 功能特性/API/部署/环境变量有变更 → **必须**更新 README.md
+- 项目结构/API 契约/编码规范有变更 → **必须**更新 AGENTS.md
+
+### 操作流程
+
+1. 执行 `git add` + `git commit`
+2. 若需要 bump 版本，执行 `npm version <major|minor|patch> --no-git-tag-version`
+3. 更新对应的文档文件（CHANGELOG.md / README.md / AGENTS.md）
+4. 执行 `git add <文档文件>` + `git commit --amend --no-edit`
+
 ## 提交前自检
 
 - [ ] 本次提交是否只围绕一个目的？
 - [ ] 是否遗漏了相关的文件？
 - [ ] 是否有调试代码（`console.log`、临时注释）混入？
 - [ ] 提交消息是否符合 Conventional Commits 规范？
+- [ ] 是否需要更新 README.md？（功能特性/API/部署/环境变量有变更时）
+- [ ] 是否需要更新 AGENTS.md？（项目结构/API 契约/编码规范有变更时）
+- [ ] 是否需要更新 CHANGELOG.md？（feat/fix/BREAKING CHANGE 必须更新）
 
 ## 示例
 
