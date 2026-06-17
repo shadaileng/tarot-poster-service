@@ -521,24 +521,26 @@ const templates: Record<TemplateName, TemplateMeta>
 
 ---
 
-#### 任务 4.2 — CI/CD 流水线
+#### 任务 4.2 — CI/CD 流水线 ✅
 
 **设计**：
 ```
 GitHub Actions workflow:
-  push/PR → lint (tsc --noEmit) → test (vitest run) → build (tsc) → docker build → docker push
+  push/PR → typecheck (tsc --noEmit) → test (vitest run) → build (tsc)
 ```
 
 **具体步骤**：
 1. `pnpm install --frozen-lockfile`
-2. `pnpm exec tsc --noEmit` — 类型检查
+2. `pnpm typecheck` — 类型检查
 3. `pnpm test` — 运行测试
 4. `pnpm build` — 编译 TypeScript
-5. `docker build -t tarot-poster-service .`
-6. `docker push` — 推送到镜像仓库
-7. 合并到 main 分支后自动部署
 
-**环境变量管理**：通过 GitHub Secrets 管理 `DOCKER_REGISTRY`、`API_KEY` 等敏感信息
+**实施文件**：
+- `.github/workflows/ci.yml` — CI 流水线定义（push/PR 到 master 触发）
+- `package.json` — 新增 `typecheck` 脚本
+- `Makefile` — 新增 `typecheck` 目标
+
+**状态**：✅ 已完成（2026-06-17）
 
 ---
 

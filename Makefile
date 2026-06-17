@@ -1,4 +1,4 @@
-.PHONY: dev build start test install clean
+.PHONY: dev build start test typecheck install clean
 
 dev:
 	pnpm run dev
@@ -11,6 +11,9 @@ start:
 
 test:
 	pnpm test
+
+typecheck:
+	pnpm typecheck
 
 install:
 	pnpm install
