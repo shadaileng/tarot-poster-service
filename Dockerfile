@@ -10,6 +10,7 @@ RUN pnpm install --frozen-lockfile
 COPY tsconfig.json ./
 COPY src/ ./src/
 RUN pnpm run build
+COPY assets/ ./assets/
 
 # ========== 运行阶段 ==========
 FROM node:20-slim
@@ -42,6 +43,7 @@ RUN pnpm install --prod --frozen-lockfile
 
 # 复制构建产物
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/assets ./assets
 
 EXPOSE 3000
 

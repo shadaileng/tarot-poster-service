@@ -1,13 +1,13 @@
 {
   "name": "tarot-poster-service",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "塔罗牌海报生成微服务 - HTML/CSS + Puppeteer 截图",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@9.15.0",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "tsc && cp src/poster/templates/*.html src/poster/templates/*.css dist/poster/templates/",
     "start": "node dist/index.js",
     "test": "vitest run",
     "test:watch": "vitest",

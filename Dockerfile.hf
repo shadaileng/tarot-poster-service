@@ -30,6 +30,7 @@ RUN pnpm install --frozen-lockfile
 COPY tsconfig.json ./
 COPY src/ ./src/
 RUN pnpm run build
+COPY assets/ ./assets/
 
 # HF Spaces 默认端口
 ENV PORT=7860
