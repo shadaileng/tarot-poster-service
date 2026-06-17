@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-06-17
+
+### Added
+- 东八区时区配置，确保服务端时间日志显示正确
+
+### Fixed
+- 修复 Docker 镜像构建时缺失 assets 目录和 HTML 模板文件
+
 ## [1.1.0] - 2026-06-17
 
 ### Added

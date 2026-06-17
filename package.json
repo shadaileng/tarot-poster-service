@@ -1,6 +1,6 @@
 {
   "name": "tarot-poster-service",
-  "version": "1.1.1",
+  "version": "1.2.1",
   "description": "塔罗牌海报生成微服务 - HTML/CSS + Puppeteer 截图",
   "private": true,
   "type": "module",
