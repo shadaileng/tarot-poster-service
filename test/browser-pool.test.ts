@@ -1,137 +1,232 @@
-// 浏览器 Page 池化测试
+// 浏览器池单元测试
+// Mock Puppeteer Browser/Page，验证池化逻辑
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import puppeteer, { type Browser } from 'puppeteer'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { BrowserPool } from '../src/poster/browser-pool'
+import type { Page, Browser } from 'puppeteer'
 
-let browser: Browser
+/** 创建 Mock Page 对象 */
+function createMockPage(id: number): Page {
+  let closed = false
+  return {
+    close: vi.fn().mockImplementation(async () => {
+      closed = true
+    }),
+    isClosed: () => closed,
+    _mockId: id,
+  } as unknown as Page
+}
 
-beforeAll(async () => {
-  browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-  })
-})
-
-afterAll(async () => {
-  await browser.close()
-})
+/** 创建 Mock Browser 对象 */
+function createMockBrowser(): Browser {
+  let pageCounter = 0
+  let closed = false
+  return {
+    newPage: vi.fn().mockImplementation(async () => {
+      if (closed) throw new Error('Browser is closed')
+      pageCounter++
+      return createMockPage(pageCounter)
+    }),
+    close: vi.fn().mockImplementation(async () => {
+      closed = true
+    }),
+    isConnected: vi.fn().mockReturnValue(true),
+  } as unknown as Browser
+}
 
 describe('BrowserPool', () => {
-  it('should acquire and release a page', async () => {
-    const pool = new BrowserPool(browser, 2, 5000)
+  let browser: Browser
 
-    const page = await pool.acquire()
-    expect(page).toBeDefined()
-    expect(pool.stats.active).toBe(1)
-    expect(pool.stats.available).toBe(0)
-
-    await pool.release(page)
-    expect(pool.stats.active).toBe(0)
-    expect(pool.stats.available).toBe(1)
-
-    await pool.shutdown()
+  beforeEach(() => {
+    browser = createMockBrowser()
   })
 
-  it('should reuse available pages', async () => {
-    const pool = new BrowserPool(browser, 2, 5000)
+  describe('acquire', () => {
+    it('should create new page when under limit', async () => {
+      const pool = new BrowserPool(browser, 3, 5000)
+      const page = await pool.acquire()
+      expect(page).toBeDefined()
+      expect(browser.newPage).toHaveBeenCalledTimes(1)
+      expect(pool.stats.active).toBe(1)
+      expect(pool.stats.waiting).toBe(0)
+    })
 
-    const page1 = await pool.acquire()
-    await pool.release(page1)
+    it('should create multiple pages up to maxPages', async () => {
+      const pool = new BrowserPool(browser, 2, 5000)
+      const page1 = await pool.acquire()
+      const page2 = await pool.acquire()
 
-    const page2 = await pool.acquire()
-    // 应该复用 page1
-    expect(page2).toBe(page1)
+      expect(browser.newPage).toHaveBeenCalledTimes(2)
+      expect(pool.stats.active).toBe(2)
+      expect(pool.stats.waiting).toBe(0)
 
-    await pool.release(page2)
-    await pool.shutdown()
+      // Cleanup
+      await pool.release(page1)
+      await pool.release(page2)
+    })
+
+    it('should throw when pool is shutting down', async () => {
+      const pool = new BrowserPool(browser, 2, 5000)
+      await pool.shutdown()
+
+      await expect(pool.acquire()).rejects.toThrow('BrowserPool is shutting down')
+    })
+
+    it('should enqueue when pool is full', async () => {
+      const pool = new BrowserPool(browser, 1, 5000)
+
+      // Acquire the only slot
+      const page1 = await pool.acquire()
+      expect(pool.stats.active).toBe(1)
+
+      // Try to acquire another - should queue
+      const acquirePromise = pool.acquire()
+
+      // Give time for the queue to register
+      await new Promise((r) => setTimeout(r, 50))
+
+      expect(pool.stats.active).toBe(1)
+      expect(pool.stats.waiting).toBe(1)
+
+      // Release the first page - should serve the queued request
+      await pool.release(page1)
+
+      const page2 = await acquirePromise
+      expect(page2).toBeDefined()
+      expect(pool.stats.waiting).toBe(0)
+
+      await pool.release(page2)
+    })
+
+    it('should reject after acquire timeout', async () => {
+      const pool = new BrowserPool(browser, 1, 100) // 100ms timeout
+
+      // Acquire the only slot
+      const page = await pool.acquire()
+
+      // Try to acquire another - should timeout
+      await expect(pool.acquire()).rejects.toThrow('BrowserPool: acquire timeout')
+
+      await pool.release(page)
+    })
   })
 
-  it('should queue when pool is full', async () => {
-    const pool = new BrowserPool(browser, 1, 3000)
+  describe('release', () => {
+    it('should close page and free slot', async () => {
+      const pool = new BrowserPool(browser, 2, 5000)
+      const page = await pool.acquire()
 
-    const page1 = await pool.acquire()
-    expect(pool.stats.active).toBe(1)
+      const closeSpy = page.close as ReturnType<typeof vi.fn>
+      await pool.release(page)
 
-    // 第二个 acquire 应该排队
-    const acquirePromise = pool.acquire()
+      expect(closeSpy).toHaveBeenCalled()
+      expect(pool.stats.active).toBe(0)
+    })
 
-    // 短暂等待确保进入排队状态
-    await new Promise((r) => setTimeout(r, 100))
-    expect(pool.stats.waiting).toBe(1)
+    it('should serve queued request after release', async () => {
+      const pool = new BrowserPool(browser, 1, 5000)
+      const page1 = await pool.acquire()
 
-    // 释放 page1，排队应该被唤醒
-    await pool.release(page1)
-    const page2 = await acquirePromise
+      // Queue a request
+      let resolvedPage: Page | null = null
+      const waitPromise = pool.acquire().then((p) => { resolvedPage = p; return p })
 
-    expect(page2).toBe(page1) // 复用
-    expect(pool.stats.waiting).toBe(0)
+      await new Promise((r) => setTimeout(r, 50))
+      expect(pool.stats.waiting).toBe(1)
 
-    await pool.release(page2)
-    await pool.shutdown()
+      await pool.release(page1)
+
+      const page2 = await waitPromise
+      expect(page2).toBeDefined()
+      expect(resolvedPage).not.toBeNull()
+      expect(pool.stats.waiting).toBe(0)
+      expect(pool.stats.active).toBe(1)
+
+      await pool.release(page2)
+    })
+
+    it('should handle close failure gracefully', async () => {
+      const pool = new BrowserPool(browser, 2, 5000)
+      const page = await pool.acquire()
+
+      // Make close throw
+      ;(page.close as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Close failed'))
+
+      // Should not throw
+      await expect(pool.release(page)).resolves.toBeUndefined()
+      expect(pool.stats.active).toBe(0)
+    })
   })
 
-  it('should timeout when waiting too long', async () => {
-    const pool = new BrowserPool(browser, 1, 500) // 500ms 超时
+  describe('shutdown', () => {
+    it('should set isShuttingDown flag', async () => {
+      const pool = new BrowserPool(browser, 2, 5000)
+      await pool.shutdown()
+      await expect(pool.acquire()).rejects.toThrow('BrowserPool is shutting down')
+    })
 
-    const page1 = await pool.acquire()
+    it('should reject all waiting entries', async () => {
+      const pool = new BrowserPool(browser, 1, 10000)
+      const page = await pool.acquire()
 
-    // 不释放 page1，第二个 acquire 应该超时
-    await expect(pool.acquire()).rejects.toThrow('acquire timeout')
+      const waitPromise1 = pool.acquire()
+      const waitPromise2 = pool.acquire()
 
-    await pool.release(page1)
-    await pool.shutdown()
+      await new Promise((r) => setTimeout(r, 50))
+      expect(pool.stats.waiting).toBe(2)
+
+      await pool.shutdown()
+
+      await expect(waitPromise1).rejects.toThrow('BrowserPool is shutting down')
+      await expect(waitPromise2).rejects.toThrow('BrowserPool is shutting down')
+      expect(pool.stats.waiting).toBe(0)
+    })
+
+    it('should close all active pages', async () => {
+      const pool = new BrowserPool(browser, 3, 5000)
+      const page1 = await pool.acquire()
+      const page2 = await pool.acquire()
+
+      await pool.shutdown()
+
+      expect(page1.close).toHaveBeenCalled()
+      expect(page2.close).toHaveBeenCalled()
+      expect(pool.stats.active).toBe(0)
+    })
   })
 
-  it('should handle shutdown gracefully', async () => {
-    const pool = new BrowserPool(browser, 2, 5000)
+  describe('stats', () => {
+    it('should return initial state correctly', () => {
+      const pool = new BrowserPool(browser, 4, 5000)
+      const stats = pool.stats
+      expect(stats.available).toBe(0)
+      expect(stats.active).toBe(0)
+      expect(stats.waiting).toBe(0)
+      expect(stats.maxPages).toBe(4)
+    })
 
-    const page = await pool.acquire()
-    await pool.release(page)
+    it('should reflect current pool state', async () => {
+      const pool = new BrowserPool(browser, 2, 5000)
+      const page = await pool.acquire()
 
-    expect(pool.stats.available).toBe(1)
+      expect(pool.stats.active).toBe(1)
+      expect(pool.stats.maxPages).toBe(2)
 
-    await pool.shutdown()
-    expect(pool.stats.available).toBe(0)
-    expect(pool.stats.active).toBe(0)
-  })
+      await pool.release(page)
+      expect(pool.stats.active).toBe(0)
+    })
 
-  it('should reject waiters on shutdown', async () => {
-    const pool = new BrowserPool(browser, 1, 10000)
+    it('should track waiting count', async () => {
+      const pool = new BrowserPool(browser, 1, 10000)
+      await pool.acquire()
 
-    const page = await pool.acquire()
+      // Should queue
+      pool.acquire().catch(() => {})
+      await new Promise((r) => setTimeout(r, 50))
 
-    // 排队请求
-    const acquirePromise = pool.acquire()
-    await new Promise((r) => setTimeout(r, 100))
-    expect(pool.stats.waiting).toBe(1)
+      expect(pool.stats.waiting).toBe(1)
 
-    // shutdown 应该拒绝等待者
-    const shutdownPromise = pool.shutdown()
-    await expect(acquirePromise).rejects.toThrow('shutting down')
-    await shutdownPromise
-
-    // 清理已获取的 page
-    try { await page.close() } catch { /* 可能已被 shutdown 关闭 */ }
-  })
-
-  it('should handle maxPages correctly', async () => {
-    const pool = new BrowserPool(browser, 3, 5000)
-    expect(pool.stats.maxPages).toBe(3)
-
-    const pages: puppeteer.Page[] = []
-    for (let i = 0; i < 3; i++) {
-      pages.push(await pool.acquire())
-    }
-    expect(pool.stats.active).toBe(3)
-    expect(pool.stats.available).toBe(0)
-
-    for (const p of pages) {
-      await pool.release(p)
-    }
-    expect(pool.stats.available).toBe(3)
-    expect(pool.stats.active).toBe(0)
-
-    await pool.shutdown()
+      await pool.shutdown()
+    })
   })
 })

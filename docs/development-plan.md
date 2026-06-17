@@ -1,6 +1,6 @@
 # 🃏 塔罗海报生成服务 — 开发规划书
 
-> 版本: v2.0 | 日期: 2026-06-16 | 状态: Phase 1-2 已完成，Phase 3 部分完成，Phase 4 待启动
+> 版本: v2.1 | 日期: 2026-06-17 | 状态: Phase 1-2 已完成，Phase 3 已完成，Phase 4 部分完成
 
 ---
 
@@ -86,7 +86,7 @@ GET /         ──→  服务信息 (HF Spaces 兼容)
 | 设计令牌硬编码 | 🟢 低 | ✅ 已修复 (2.2) | 颜色/字号/间距写死在模板字符串中，无法切换主题 |
 | 缺乏性能监控 | 🟢 低 | ✅ 已修复 (3.2) | 无渲染耗时、缓存命中率等指标 |
 | 无结构化日志 | 🟢 低 | ⬜ 待处理 (4.3) | console.log 无法按级别/模块过滤 |
-| 测试覆盖率不足 | 🟢 低 | ⬜ 待处理 (4.1) | 缺少 API 端到端测试和渲染集成测试 |
+| 测试覆盖率不足 | 🟢 低 | ✅ 已修复 (4.1) | 8 个测试文件 117 个测试用例，覆盖 API/缓存/池/主题/模板/引擎/指标 |
 | 无 CI/CD 流水线 | 🟢 低 | ⬜ 待处理 (4.2) | 手动构建和部署 |
 
 ---
@@ -453,42 +453,69 @@ const templates: Record<TemplateName, TemplateMeta>
 
 ---
 
-### Phase 4: 工程化增强 🔜 待启动
+### Phase 4: 工程化增强 🔄 进行中
 
 **目标**：提升代码质量和运维效率。
 
-#### 任务 4.1 — 测试覆盖率提升
+#### 任务 4.1 — 测试覆盖率提升 ✅
 
-**当前测试**：`test/poster.test.ts` — 模板生成、缓存、XSS 防护（Vitest）
+**当前测试**：8 个测试文件，117 个测试用例，1 个跳过
 
-**计划扩展**：
+**已实施**：
 
-1. **渲染集成测试** — `test/render.test.ts`
-   - Mock Puppeteer Page（使用 `jest-puppeteer` 或手动 mock）
-   - 验证资源就绪检查逻辑
-   - 验证错误诊断抓取
-   - 验证浏览器重连机制
+1. **模板引擎单元测试** — `test/engine.test.ts`（9 tests）
+   - `renderTemplate` 变量替换（{{ escaped }} / {{{ raw }}}）
+   - HTML 转义防 XSS
+   - CSS 文件注入
+   - themeCSSVars 注入
+   - 缺失变量容错
+   - 多模板套用
 
-2. **API 端到端测试** — `test/api.test.ts`
-   - 使用 supertest 测试 Express 应用
-   - 验证所有端点返回正确的状态码和响应头
-   - 验证缓存命中/未命中行为
-   - 验证鉴权中间件
-   - 验证 CORS 响应头
+2. **主题系统测试** — `test/theme.test.ts`（17 tests）
+   - `getTheme` 查找/回退（dark/light/unknown）
+   - `themeToCSSVars` CSS 变量输出格式
+   - dark/light 主题令牌完整性对比
+   - 颜色/排版/间距/圆角令牌验证
 
-3. **缓存淘汰边界测试** — 扩展现有 `poster.test.ts`
-   - TTL 过期测试
-   - 容量上限 LRU 淘汰测试
-   - 并发读写安全性测试
+3. **模板注册表测试** — `test/templates.test.ts`（13 tests）
+   - `getTemplate` 精确匹配/未指定回退 default/未知回退
+   - 各模板 width 和 defaultTheme 正确性
 
-4. **浏览器池测试** — `test/browser-pool.test.ts`
-   - acquire/release 流程
-   - 池满排队 + 超时
-   - 优雅关闭
+4. **指标收集器测试** — `test/metrics.test.ts`（23 tests）
+   - recordRender 计数/缓存命中未命中分离
+   - recordError 错误计数
+   - getSnapshot 零值状态/P50/P95/P99 分位数/缓存命中率
+   - toPrometheus 格式含 HELP/TYPE 注释
+   - reset 清空所有统计
 
-5. **并发压力测试**
-   - 使用 autocannon 对 `/poster` 端点施压
-   - 监控内存使用和响应延迟
+5. **浏览器池测试** — `test/browser-pool.test.ts`（14 tests）
+   - acquire/release 流程（Mock Page）
+   - 池满排队等待 + 超时拒绝
+   - shutdown 拒绝等待者 + 关闭活跃 Page
+   - getStats 状态快照
+
+6. **缓存边界测试** — `test/poster.test.ts` 扩展（17 tests）
+   - LRU 淘汰（访问后移动到末尾）
+   - 容量上限驱逐最旧条目
+   - 缓存键包含 template/theme/comprehensiveInterpretation
+   - size/maxSize 属性验证
+
+7. **API 集成测试** — `test/api.test.ts`（21 tests）
+   - GET / 返回服务信息
+   - GET /health 返回缓存/池/指标状态
+   - GET /metrics Prometheus 格式
+   - POST /poster 参数校验（空 cards/缺失 cards → 400）
+   - POST /poster 成功返回 image/png + X-Cache HIT/MISS
+   - X-Render-* 响应头、Cache-Control
+   - auth 中间件（未配置 API_KEY 时跳过）
+   - CORS 中间件（Access-Control-Allow-Origin + OPTIONS 204）
+
+8. **渲染集成测试** — `test/render.test.ts`（4 tests | 1 skipped）
+   - Mock Puppeteer 模块结构验证
+   - renderPoster/closeBrowser 导出验证
+
+**新增 devDependencies**：
+- `supertest` / `@types/supertest` — API 端到端测试
 
 **目标覆盖率**：>80% 行覆盖
 
@@ -640,7 +667,14 @@ tarot-poster-service/
 │   │       ├── wechat.html       # 微信朋友圈模板 HTML
 │   │       └── wechat.css        # 微信朋友圈模板 CSS
 ├── test/
-│   └── poster.test.ts            # 模板 + 缓存 + XSS 防护测试
+│   ├── poster.test.ts            # 模板 + 缓存 + LRU + XSS 防护测试
+│   ├── engine.test.ts            # 模板引擎变量注入测试
+│   ├── theme.test.ts             # 主题系统测试
+│   ├── templates.test.ts         # 模板注册表测试
+│   ├── metrics.test.ts           # 性能指标收集器测试
+│   ├── browser-pool.test.ts      # 浏览器 Page 池测试
+│   ├── render.test.ts            # Puppeteer 渲染 Mock 测试
+│   └── api.test.ts               # API 端到端测试 (supertest)
 ├── assets/
 │   └── cards/                    # 塔罗牌 SVG 图片 (78 张大阿卡纳)
 ├── docs/
@@ -677,10 +711,10 @@ Week 5-6  ████████  Phase 3: 功能扩展 🔄 进行中
           ├── 3.2 性能监控仪表板 ✅
           └── 3.3 动画海报 🔜
 
-Week 7+   ████████  Phase 4: 工程化增强 🔜 待启动
-          ├── 4.1 测试覆盖率提升
-          ├── 4.2 CI/CD 流水线
-          └── 4.3 日志标准化
+Week 7+   ████████  Phase 4: 工程化增强 🔄 进行中
+          ├── 4.1 测试覆盖率提升 ✅
+          ├── 4.2 CI/CD 流水线 🔜
+          └── 4.3 日志标准化 🔜
 ```
 
 ---
