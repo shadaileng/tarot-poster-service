@@ -186,12 +186,22 @@ export async function renderPoster(html: string, width?: number): Promise<{ buff
         })
       )
 
-      // ③ 等待字体就绪
+      // ③ 等待字体就绪（最多 5s，超时渲染继续）
       if (document.fonts && document.fonts.ready) {
-        await document.fonts.ready
+        (window as any).__fontTimedOut = false
+        const fontTimeout = new Promise<void>((resolve) => {
+          setTimeout(() => { (window as any).__fontTimedOut = true; resolve() }, 5000)
+        })
+        await Promise.race([document.fonts.ready, fontTimeout])
       }
     })
     const resourceMs = Date.now() - resourceStart
+
+    // 检查字体是否超时
+    const fontTimedOut = await page.evaluate(() => !!(window as any).__fontTimedOut)
+    if (fontTimedOut) {
+      log.warn({ resourceMs }, 'document.fonts.ready timed out after 5s — rendering may use fallback fonts')
+    }
 
     // 阶段 3：合成等待
     const composeStart = Date.now()

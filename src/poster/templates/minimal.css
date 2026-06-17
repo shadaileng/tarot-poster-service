@@ -3,21 +3,27 @@
   font-family: 'Noto Serif SC';
   font-style: normal;
   font-weight: 400;
-  src: local('Noto Serif CJK SC');
+  src: local('Noto Serif CJK SC'), local('Noto Serif SC'),
+       url('file:///usr/share/fonts/opentype/noto/NotoSerifCJK-Regular.ttc') format('truetype');
+  font-display: block;
 }
 
 @font-face {
   font-family: 'Noto Serif SC';
   font-style: normal;
   font-weight: 600;
-  src: local('Noto Serif CJK SC Bold');
+  src: local('Noto Serif CJK SC Bold'), local('Noto Serif SC Bold'),
+       url('file:///usr/share/fonts/opentype/noto/NotoSerifCJK-Bold.ttc') format('truetype');
+  font-display: block;
 }
 
 @font-face {
   font-family: 'Noto Serif SC';
   font-style: normal;
   font-weight: 700;
-  src: local('Noto Serif CJK SC Bold');
+  src: local('Noto Serif CJK SC Bold'), local('Noto Serif SC Bold'),
+       url('file:///usr/share/fonts/opentype/noto/NotoSerifCJK-Bold.ttc') format('truetype');
+  font-display: block;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
