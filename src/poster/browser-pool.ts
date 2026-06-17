@@ -4,6 +4,9 @@
 
 import { type Browser, type Page } from 'puppeteer'
 import { config } from '../config.js'
+import { getLogger } from '../logger.js'
+
+const log = getLogger('Pool')
 
 export interface PoolStats {
   available: number // 始终为 0（Page 不复用）
@@ -99,12 +102,12 @@ export class BrowserPool {
     await Promise.allSettled(
       allPages.map((page) =>
         page.close().catch((e) => {
-          console.warn('[BrowserPool] Error closing page during shutdown:', (e as Error).message)
+          log.warn({ err: e }, 'Error closing page during shutdown')
         })
       )
     )
 
-    console.log(`[BrowserPool] Shutdown complete: ${allPages.length} pages closed`)
+    log.info({ pagesClosed: allPages.length }, 'Shutdown complete')
   }
 
   /** 获取池状态 */
@@ -148,7 +151,7 @@ export async function getBrowserPool(browser: Browser): Promise<BrowserPool> {
         return pool
       }
       // 旧 browser 已断开，关闭旧池重建
-      console.warn('[BrowserPool] Browser disconnected, recreating pool...')
+      log.warn('Browser disconnected, recreating pool...')
       await pool.shutdown()
     } catch {
       // poolPromise 异常，重建
@@ -168,7 +171,7 @@ export async function closeBrowserPool(): Promise<void> {
       const pool = await poolPromise
       await pool.shutdown()
     } catch (e) {
-      console.error('[BrowserPool] Error shutting down pool:', e)
+      log.error({ err: e }, 'Error shutting down pool')
     }
     poolPromise = null
   }

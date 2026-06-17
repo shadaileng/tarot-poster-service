@@ -7,6 +7,9 @@ import type { PosterData, PosterCardInput } from './types.js'
 import { renderTemplate } from './engine.js'
 import { getTheme, themeToCSSVars } from './theme.js'
 import { getTemplate } from './templates/index.js'
+import { getLogger } from '../logger.js'
+
+const log = getLogger('Template')
 
 /** assets/cards 目录的绝对路径 */
 const CARDS_DIR = path.resolve(import.meta.dirname, '../../assets/cards')
@@ -21,7 +24,7 @@ function resolveCardImage(card: PosterCardInput): string {
     const base64 = Buffer.from(svgContent).toString('base64')
     return `data:image/svg+xml;base64,${base64}`
   } catch (err) {
-    console.error(`[Template] Failed to read card SVG: ${filePath}`, err)
+    log.error({ err, filePath }, 'Failed to read card SVG')
     // 返回一个占位 data URI（灰色方块），避免海报渲染中断
     const placeholderSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="260" viewBox="0 0 160 260"><rect width="160" height="260" fill="#2a2a3e"/><text x="80" y="130" text-anchor="middle" fill="#555" font-size="14" font-family="sans-serif">暂无图片</text></svg>`
     const base64 = Buffer.from(placeholderSvg).toString('base64')

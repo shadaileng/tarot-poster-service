@@ -7,6 +7,9 @@ import os from 'node:os'
 import puppeteer, { type Browser, type ConsoleMessage } from 'puppeteer'
 import { config } from '../config.js'
 import { getBrowserPool, closeBrowserPool } from './browser-pool.js'
+import { getLogger } from '../logger.js'
+
+const log = getLogger('Puppeteer')
 
 // ========== 浏览器连接池 + 自动重连 ==========
 let browserPromise: Promise<Browser> | null = null
@@ -21,11 +24,11 @@ function startHealthCheck(): void {
     try {
       const browser = await browserPromise
       if (!browser.isConnected()) {
-        console.warn('[Puppeteer] Health check: browser disconnected, resetting...')
+        log.warn('Health check: browser disconnected, resetting...')
         browserPromise = null
       }
     } catch {
-      console.warn('[Puppeteer] Health check: browser promise rejected, resetting...')
+      log.warn('Health check: browser promise rejected, resetting...')
       browserPromise = null
     }
   }, HEALTH_CHECK_INTERVAL_MS)
@@ -48,16 +51,16 @@ async function getBrowser(): Promise<Browser> {
       if (browser.isConnected()) {
         return browser
       }
-      console.warn('[Puppeteer] Browser disconnected, re-launching...')
+      log.warn('Browser disconnected, re-launching...')
       browserPromise = null
     } catch (e) {
-      console.warn('[Puppeteer] Existing browser promise rejected, re-launching:', (e as Error).message)
+      log.warn({ err: e }, 'Existing browser promise rejected, re-launching')
       browserPromise = null
     }
   }
 
   // ② 启动新浏览器
-  console.log('[Puppeteer] Launching browser...')
+  log.info('Launching browser...')
   browserPromise = puppeteer.launch({
     headless: true,
     executablePath: config.puppeteer.executablePath,
@@ -67,7 +70,7 @@ async function getBrowser(): Promise<Browser> {
   // ③ 注册 disconnected 事件监听（主动感知崩溃）
   const browser = await browserPromise
   browser.on('disconnected', () => {
-    console.warn('[Puppeteer] Browser disconnected event fired, resetting...')
+    log.warn('Browser disconnected event fired, resetting...')
     browserPromise = null
     stopHealthCheck()
   })
@@ -89,9 +92,9 @@ export async function closeBrowser(): Promise<void> {
     try {
       const browser = await browserPromise
       await browser.close()
-      console.log('[Puppeteer] Browser closed')
+      log.info('Browser closed')
     } catch (e) {
-      console.error('[Puppeteer] Error closing browser:', e)
+      log.error({ err: e }, 'Error closing browser')
     }
     browserPromise = null
   }
@@ -213,8 +216,7 @@ export async function renderPoster(html: string, width?: number): Promise<{ buff
     return { buffer: Buffer.from(screenshot), timings }
   } catch (error) {
     // ========== 错误诊断抓取 ==========
-    const errMsg = error instanceof Error ? error.message : String(error)
-    console.error(`[Puppeteer] renderPoster failed: ${errMsg}`)
+    log.error({ err: error }, 'renderPoster failed')
 
     let diagnosticHtml: string | null = null
     let failureScreenshotPath: string | null = null
@@ -224,7 +226,7 @@ export async function renderPoster(html: string, width?: number): Promise<{ buff
     try {
       diagnosticHtml = await page.content()
     } catch (e) {
-      console.error('[Puppeteer] Diagnostic - Failed to capture page HTML:', (e as Error).message)
+      log.error({ err: e }, 'Diagnostic - Failed to capture page HTML')
     }
 
     // ② 尝试 page.screenshot() 获取失败时页面快照，保存到临时文件
@@ -239,12 +241,12 @@ export async function renderPoster(html: string, width?: number): Promise<{ buff
       await fs.writeFile(failureScreenshotPath, failureScreenshot)
       failureScreenshotSize = failureScreenshot.length
     } catch (e) {
-      console.error('[Puppeteer] Diagnostic - Failed to capture failure screenshot:', (e as Error).message)
+      log.error({ err: e }, 'Diagnostic - Failed to capture failure screenshot')
     }
 
-    // ③ 输出结构化诊断日志
-    console.error('[Puppeteer] Render diagnostics:', JSON.stringify({
-      error: errMsg,
+    // ③ 输出结构化诊断日志（pino 自动处理对象序列化）
+    log.error({
+      errorMsg: error instanceof Error ? error.message : String(error),
       htmlPreview: diagnosticHtml ? diagnosticHtml.slice(0, 2000) : null,
       failureScreenshot: failureScreenshotPath
         ? { path: failureScreenshotPath, size: failureScreenshotSize }
@@ -252,7 +254,7 @@ export async function renderPoster(html: string, width?: number): Promise<{ buff
       consoleLogs: consoleLogs.length > 0 ? consoleLogs.slice(-50) : [],
       pageErrors: pageErrors.length > 0 ? pageErrors : [],
       timestamp: new Date().toISOString(),
-    }))
+    }, 'Render diagnostics')
 
     // 重新抛出原始错误
     throw error
@@ -265,7 +267,7 @@ export async function renderPoster(html: string, width?: number): Promise<{ buff
     try {
       await pool.release(page)
     } catch (e) {
-      console.warn('[Puppeteer] Error releasing page to pool:', (e as Error).message)
+      log.warn({ err: e }, 'Error releasing page to pool')
     }
   }
 }

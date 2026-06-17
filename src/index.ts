@@ -14,7 +14,10 @@ import { getPoolStats } from './poster/browser-pool.js'
 import { posterCache } from './cache/index.js'
 import { getTemplate } from './poster/templates/index.js'
 import { metrics } from './monitor/index.js'
+import { getLogger } from './logger.js'
 import type { PosterData } from './poster/types.js'
+
+const log = getLogger('API')
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -138,17 +141,17 @@ app.post('/poster', authMiddleware, async (req, res) => {
     res.send(imageBuffer)
   } catch (error) {
     metrics.recordError()
-    console.error('Poster generation failed:', error)
+    log.error({ err: error }, 'Poster generation failed')
     res.status(500).json({ error: 'Poster generation failed' })
   }
 })
 
 // ========== 启动服务 ==========
 app.listen(config.port, '0.0.0.0', () => {
-  console.log(`🃏 Tarot Poster Service running on http://0.0.0.0:${config.port}`)
-  console.log(`   Environment: ${config.nodeEnv}`)
-  console.log(`   Auth: ${config.apiKey ? 'enabled' : 'disabled'}`)
-  console.log(`   Cache: max ${config.cache.maxSize} entries, TTL ${config.cache.ttlSeconds}s`)
+  log.info({ port: config.port }, 'Tarot Poster Service running')
+  log.info({ environment: config.nodeEnv }, 'Environment')
+  log.info({ authEnabled: !!config.apiKey }, 'Auth status')
+  log.info({ cacheMaxSize: config.cache.maxSize, cacheTTL: config.cache.ttlSeconds }, 'Cache config')
 })
 
 export default app

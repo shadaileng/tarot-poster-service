@@ -546,19 +546,19 @@ GitHub Actions workflow:
 
 #### 任务 4.3 — 日志标准化
 
-**当前状态**：所有日志使用 `console.log` / `console.error` / `console.warn`，无结构化
+**状态**：✅ 已完成（2026-06-17）
 
-**计划**：
-- 引入 `pino` 结构化日志库（轻量，性能好）
-- 统一日志格式：
-  ```json
-  { "level": "info", "timestamp": "...", "module": "render", "message": "...", "durationMs": 1234, "template": "default" }
-  ```
-- 按模块区分：`[Puppeteer]`、`[Cache]`、`[Pool]`、`[API]`、`[Metrics]`
-- 开发环境输出美化格式（`pino-pretty`），生产环境输出 JSON
-- 通过 `LOG_LEVEL` 环境变量控制日志级别（debug/info/warn/error）
+**实施内容**：
+- 引入 `pino` 结构化日志库 + `pino-pretty` 开发时美化
+- 新建 `src/logger.ts` 共享日志模块，`getLogger(module)` 工厂函数自动注入 module 字段
+- 开发环境使用 pino-pretty 彩色美化输出，生产环境输出纯 JSON
+- 通过 `LOG_LEVEL` 环境变量控制级别（debug/info/warn/error，默认 debug/dev、info/prod）
+- 原有 `console.*` 全面替换为 pino 结构化日志：
+  - `console.error('[Puppeteer] Render diagnostics:', JSON.stringify({...}))` → `log.error({ err, htmlPreview, ... }, 'Render diagnostics')`（pino 自动处理对象序列化）
+  - 错误对象统一通过第一参数 `{ err }` 传递，保证完整堆栈跟踪
+  - 模块前缀自动注入，不再手动拼接 `[Puppeteer]` / `[BrowserPool]` 等字符串
 
-**影响文件**：`src/index.ts`、`src/poster/render.ts`、`src/poster/browser-pool.ts`、`src/cache/index.ts`、`src/monitor/metrics.ts`
+**影响文件**：`src/logger.ts`(新建)、`src/index.ts`、`src/poster/render.ts`、`src/poster/browser-pool.ts`、`src/poster/template.ts`
 
 ---
 
