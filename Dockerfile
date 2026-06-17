@@ -30,6 +30,9 @@ RUN apt-get update && apt-get install -y \
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 
+# 默认东八区（部署时可通过 -e TZ=... 覆盖）
+ENV TZ=Asia/Shanghai
+
 WORKDIR /app
 
 # 复制 pnpm-lock.yaml + package.json 安装生产依赖

@@ -4,6 +4,9 @@ export const config = {
   port: parseInt(process.env.PORT || '3000', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
 
+  // 时区（默认东八区，部署时可覆盖）
+  timezone: process.env.TZ || 'Asia/Shanghai',
+
   // API 鉴权（不配置则跳过）
   apiKey: process.env.API_KEY || '',
 

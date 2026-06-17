@@ -18,6 +18,7 @@ services:
       - CACHE_TTL_SECONDS=3600
       - POOL_MAX_PAGES=4
       - POOL_ACQUIRE_TIMEOUT_MS=30000
+      - TZ=Asia/Shanghai
     volumes:
       # 可选：挂载字体目录
       - ./assets/fonts:/app/assets/fonts:ro
