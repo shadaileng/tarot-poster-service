@@ -135,3 +135,45 @@ POST /poster  { cards, question, spreadName, interpretation, date }
 - 缓存键基于 SHA256 哈希（只对关键字段哈希，不包含 `meaning` 全文）
 - Puppeteer 浏览器实例通过连接池复用（`getBrowser()` 单例），监听 `SIGTERM/SIGINT` 优雅关闭
 - HTML 模板内联 CSS，不依赖外部样式文件
+
+## Git 提交规范
+
+本项目严格遵循 Conventional Commits 规范，AI 助手生成提交时须遵守以下约定。
+
+### 提交格式
+
+```
+<type>(poster-service): <中文简短描述>
+
+<body>（可选，多行中文）
+```
+
+### type 与语义化版本
+
+| type | 用途 | 版本影响 |
+|------|------|---------|
+| `feat` | 新功能 | MINOR（次版本号 +1） |
+| `fix` | Bug 修复 | PATCH（修订号 +1） |
+| `feat!` / `fix!` / `BREAKING CHANGE` | 破坏性变更 | MAJOR（主版本号 +1） |
+| `docs` / `style` / `refactor` / `perf` / `test` / `chore` / `ci` | 其他 | 不变 |
+
+### 行为约束
+
+- **自动提交**：每次代码修改完成后自动 `git add <具体文件>` + `git commit`，不推送远程
+- **原子提交**：一个提交只做一件事，不混入无关改动
+- **版本号联动**：`feat`/`fix` 提交后自动 `npm version --no-git-tag-version` 修改 `package.json` 版本号，通过 `--amend` 合并到同一提交
+- **禁止行为**：禁止 `wip`/`tmp save` 等无意义消息；禁止提交 `console.log`、`debugger` 等调试代码；禁止 `git add .` 全量暂存
+- **amend 规范**：仅允许将版本号 bump / 漏提交的关联文件合并到同一提交；禁止跨任务合并；禁止 amend 已推送的提交
+
+### 示例
+
+```bash
+# 好 ✅
+git commit -m "feat(poster-service): 新增海报背景自定义功能"
+git commit -m "fix(poster-service): 修复 Puppeteer 截图时字体缺失问题"
+
+# 不好 ❌
+git commit -m "update code"
+git commit -m "fix"
+git commit -m "wip"
+```
