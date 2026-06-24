@@ -94,6 +94,61 @@ notepad .env.hf
 - **缓存**: LRU 内存缓存
 - **部署**: Docker / HuggingFace Spaces
 
+## 实现顺序
+
+> 本节汇总 docs/ 目录下开发计划的落地时序。状态：✅ 已完成  🟡 进行中  ⬜ 待实施
+> 注：本项目为独立微服务，当前海报逻辑已同步整合至 tarot-backend，但本项目仍保持独立维护以支持未来微服务拆分。
+
+### 阶段 0：基础截图服务
+
+| 顺序 | 计划文档 | 范围 | 状态 |
+|:---:|---------|------|:---:|
+| 0.1 | （仓库初始提交） | Express + Puppeteer + /poster 端点 | ✅ |
+
+### 阶段 1：Phase 1 — 稳定性修复
+
+| 顺序 | 计划文档 | 范围 | 状态 |
+|:---:|---------|------|:---:|
+| 1.1 | `docs/development-plan.md` §任务 1.1 | 资源就绪检查（5 步防御） | ✅ |
+| 1.2 | `docs/development-plan.md` §任务 1.2 | 字体本地化（@font-face Noto Serif SC） | ✅ |
+| 1.3 | `docs/development-plan.md` §任务 1.3 | 浏览器单例 + 健康检查 + 自动重连 | ✅ |
+| 1.4 | `docs/development-plan.md` §任务 1.4 | 错误诊断抓取（page.content/截图/console） | ✅ |
+
+### 阶段 2：Phase 2 — 模板工程化
+
+| 顺序 | 计划文档 | 范围 | 状态 |
+|:---:|---------|------|:---:|
+| 2.1 | `docs/development-plan.md` §任务 2.1 | HTML/CSS 模板外挂化 | ✅ |
+| 2.2 | `docs/development-plan.md` §任务 2.2 | 设计令牌系统（dark/light 主题） | ✅ |
+| 2.3 | `docs/development-plan.md` §任务 2.3 | 浏览器 Page 池化（并发渲染） | ✅ |
+
+### 阶段 3：Phase 3 — 可观测性
+
+| 顺序 | 计划文档 | 范围 | 状态 |
+|:---:|---------|------|:---:|
+| 3.1 | `docs/development-plan.md` §任务 3.1 | 分阶段耗时打点 | ✅ |
+| 3.2 | `docs/development-plan.md` §任务 3.2 | 性能监控仪表板（/health /metrics） | ✅ |
+
+### 阶段 4：Phase 4 — 测试与交付
+
+| 顺序 | 计划文档 | 范围 | 状态 |
+|:---:|---------|------|:---:|
+| 4.1 | `docs/development-plan.md` §任务 4.1 | Vitest 单元/集成测试 | ✅ |
+| 4.2 | `docs/development-plan.md` §任务 4.2 | CI/CD 流水线 | ⬜ |
+| 4.3 | `docs/development-plan.md` §任务 4.3 | 结构化日志 | ⬜ |
+
+### 阶段 5：部署
+
+| 顺序 | 计划文档 | 范围 | 状态 |
+|:---:|---------|------|:---:|
+| 5.1 | `docs/hf-space-deploy.md` | HF Spaces Docker 部署脚本 | ✅ |
+| 5.2 | `docs/hf-space-deploy.md` §故障排查 | CORS 跨域问题（Worker / Nginx / BFF 5 方案） | ✅ |
+
+### 跨项目依赖
+
+- 📦 本项目被 tarot-miniprogram 依赖：tarot-miniprogram 阶段 1.x 的 /poster 调用方
+- 📦 本项目海报逻辑已同步整合进 tarot-backend 的 src/poster/ 模块
+
 ## 环境变量
 
 本项目有两组环境变量文件：
