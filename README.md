@@ -164,6 +164,8 @@ notepad .env.hf
 |------|------|--------|:--:|
 | `PORT` | 服务监听端口 | `3000` | |
 | `NODE_ENV` | 运行环境 | `development` | |
+| `TZ` | 时区 | `Asia/Shanghai` | |
+| `LOG_LEVEL` | 日志级别（trace/debug/info/warn/error/fatal） | `info` | |
 | `API_KEY` | API 鉴权密钥（Bearer Token） | 空（不鉴权） | |
 | `CORS_ORIGIN` | 跨域允许来源 | `*` | |
 | `PUPPETEER_EXECUTABLE_PATH` | Chromium 可执行文件路径 | 系统自动查找 | |

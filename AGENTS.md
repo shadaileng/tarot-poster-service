@@ -83,6 +83,8 @@ POST /poster  { cards, question, spreadName, interpretation, date }
 |------|------|--------|:--:|:--:|
 | `PORT` | 服务端口 | `3000`（HF Spaces: `7860`） | | 服务 |
 | `NODE_ENV` | 运行环境 | `development` | | 服务 |
+| `TZ` | 时区 | `Asia/Shanghai` | | 服务 |
+| `LOG_LEVEL` | 日志级别（trace/debug/info/warn/error/fatal） | `info` | | 服务 |
 | `API_KEY` | API 鉴权密钥（Bearer Token） | 空（不鉴权） | | 安全 |
 | `CORS_ORIGIN` | CORS 允许来源 | `*` | | 安全 |
 | `PUPPETEER_EXECUTABLE_PATH` | Chromium 路径 | 系统自动查找 | | 截图 |
