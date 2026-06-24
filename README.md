@@ -160,20 +160,22 @@ notepad .env.hf
 
 ### 应用运行变量（`.env`）
 
-| 变量 | 用途 | 默认值 | 必填 |
-|------|------|--------|:--:|
-| `PORT` | 服务监听端口 | `3000` | |
-| `NODE_ENV` | 运行环境 | `development` | |
-| `TZ` | 时区 | `Asia/Shanghai` | |
-| `LOG_LEVEL` | 日志级别（trace/debug/info/warn/error/fatal） | `info` | |
-| `API_KEY` | API 鉴权密钥（Bearer Token） | 空（不鉴权） | |
-| `CORS_ORIGIN` | 跨域允许来源 | `*` | |
-| `PUPPETEER_EXECUTABLE_PATH` | Chromium 可执行文件路径 | 系统自动查找 | |
-| `PUPPETEER_ARGS` | Chromium 启动参数（逗号分隔） | `--no-sandbox,--disable-setuid-sandbox,--disable-dev-shm-usage` | |
-| `CACHE_MAX_SIZE` | LRU 缓存最大条目数 | `100` | |
-| `CACHE_TTL_SECONDS` | 缓存过期时间（秒） | `3600` | |
-| `POSTER_WIDTH` | 海报宽度（px） | `750` | |
-| `POSTER_HEIGHT` | 海报高度（px） | `1334` | |
+| 变量 | 来源 | 用途 | 默认值 | 必填 |
+|------|------|------|--------|:--:|
+| `PORT` | 基础服务 | 服务监听端口 | `3000` | |
+| `NODE_ENV` | 基础服务 | 运行环境 | `development` | |
+| `TZ` | 基础服务 | 时区 | `Asia/Shanghai` | |
+| `LOG_LEVEL` | 基础服务 | 日志级别（trace/debug/info/warn/error/fatal） | `info` | |
+| `API_KEY` | 安全鉴权 | API 鉴权密钥（Bearer Token） | 空（不鉴权） | ⚠️ ¹ |
+| `CORS_ORIGIN` | 安全鉴权 | 跨域允许来源 | `*` | |
+| `PUPPETEER_EXECUTABLE_PATH` | 海报截图 | Chromium 可执行文件路径 | 系统自动查找 | |
+| `PUPPETEER_ARGS` | 海报截图 | Chromium 启动参数（逗号分隔） | `--no-sandbox,--disable-setuid-sandbox,--disable-dev-shm-usage` | |
+| `CACHE_MAX_SIZE` | 缓存性能 | LRU 缓存最大条目数 | `100` | |
+| `CACHE_TTL_SECONDS` | 缓存性能 | 缓存过期时间（秒） | `3600` | |
+| `POSTER_WIDTH` | 海报渲染 | 海报宽度（px） | `750` | |
+| `POSTER_HEIGHT` | 海报渲染 | 海报高度（px） | `1334` | |
+
+> ¹ 生产环境（尤其是 HF Spaces 等公网可达部署）强烈建议设置，否则 `/poster` 端点无保护。
 
 ### HF Spaces 部署变量（`.env.hf`）
 

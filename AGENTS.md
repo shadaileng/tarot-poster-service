@@ -85,7 +85,7 @@ POST /poster  { cards, question, spreadName, interpretation, date }
 | `NODE_ENV` | 运行环境 | `development` | | 服务 |
 | `TZ` | 时区 | `Asia/Shanghai` | | 服务 |
 | `LOG_LEVEL` | 日志级别（trace/debug/info/warn/error/fatal） | `info` | | 服务 |
-| `API_KEY` | API 鉴权密钥（Bearer Token） | 空（不鉴权） | | 安全 |
+| `API_KEY` | API 鉴权密钥（Bearer Token） | 空（不鉴权） | ⚠️ ¹ | 安全 |
 | `CORS_ORIGIN` | CORS 允许来源 | `*` | | 安全 |
 | `PUPPETEER_EXECUTABLE_PATH` | Chromium 路径 | 系统自动查找 | | 截图 |
 | `PUPPETEER_ARGS` | Chromium 启动参数（逗号分隔） | `--no-sandbox,--disable-setuid-sandbox,--disable-dev-shm-usage` | | 截图 |
@@ -93,6 +93,8 @@ POST /poster  { cards, question, spreadName, interpretation, date }
 | `CACHE_TTL_SECONDS` | 缓存 TTL（秒） | `3600` | | 性能 |
 | `POSTER_WIDTH` | 海报宽度（px） | `750` | | 海报 |
 | `POSTER_HEIGHT` | 海报高度（px） | `1334` | | 海报 |
+
+> ¹ 生产环境（尤其是 HF Spaces 等公网可达部署）强烈建议设置，否则 `/poster` 端点无保护。
 
 ### HF 部署变量（`.env.hf`，仅部署脚本使用）
 
